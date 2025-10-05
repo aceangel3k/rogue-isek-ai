@@ -378,6 +378,13 @@ function App() {
     // Load HUD and weapon for new dungeon
     const data = transitionData.nextGameData;
     
+    // Replace the story narrative with the patched story for continuation
+    if (transitionData.storyPatch && data.story) {
+      data.story.narrative = transitionData.storyPatch;
+      data.story.intro = transitionData.storyPatch;
+      console.log('✓ Injected patched story into game data');
+    }
+    
     // Regenerate textures from cache
     console.log('Regenerating images for shared world dungeon...');
     if (data.textures && data.textures.length > 0) {
