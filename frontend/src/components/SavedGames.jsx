@@ -23,7 +23,7 @@ export default function SavedGames({ onLoadGame, onClose }) {
     try {
       // Load saves
       const savesResponse = await fetch(
-        `http://localhost:5001/api/get-saves?player_id=${playerId}&completed_only=true`
+        `/api/get-saves?player_id=${playerId}&completed_only=true`
       );
       if (savesResponse.ok) {
         const savesData = await savesResponse.json();
@@ -32,7 +32,7 @@ export default function SavedGames({ onLoadGame, onClose }) {
 
       // Load progress
       const progressResponse = await fetch(
-        `http://localhost:5001/api/get-progress?player_id=${playerId}`
+        `/api/get-progress?player_id=${playerId}`
       );
       if (progressResponse.ok) {
         const progressData = await progressResponse.json();

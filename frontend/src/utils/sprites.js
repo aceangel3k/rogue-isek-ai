@@ -144,7 +144,7 @@ export async function loadGameSprites(gameId, characterData, theme) {
   } else {
     // If not all cached, fetch from backend
     try {
-      const response = await fetch('http://localhost:5001/api/generate-sprites', {
+      const response = await fetch('/api/generate-sprites', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

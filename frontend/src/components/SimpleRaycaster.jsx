@@ -115,7 +115,7 @@ export default function SimpleRaycaster({ gameData, onPlayerMove, onLoadNextDung
       const playerId = getPlayerId();
       const prompt = sessionStorage.getItem('lastPrompt') || '';
       
-      const response = await fetch('http://localhost:5001/api/save-game', {
+      const response = await fetch('/api/save-game', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

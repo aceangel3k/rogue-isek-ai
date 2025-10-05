@@ -107,7 +107,7 @@ export async function loadGameTextures(gameId, textureData) {
     if (!base64Data) {
       // If not cached, fetch from backend
       try {
-        const response = await fetch('http://localhost:5001/api/generate-textures', {
+        const response = await fetch('/api/generate-textures', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

@@ -41,7 +41,7 @@ export default function DialogueBox({ npc, gameData, onClose }) {
 
     try {
       // Call AI dialogue endpoint
-      const response = await fetch('http://localhost:5001/api/generate-npc-dialogue', {
+      const response = await fetch('/api/generate-npc-dialogue', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
