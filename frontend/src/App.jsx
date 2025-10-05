@@ -26,6 +26,19 @@ function App() {
       return [];
     }
   });
+  
+  // Track played prompts to avoid similar dungeons
+  const [playedPrompts, setPlayedPrompts] = useState(() => {
+    try {
+      const stored = localStorage.getItem('playedPrompts');
+      const parsed = stored ? JSON.parse(stored) : [];
+      console.log('Loaded playedPrompts from localStorage:', parsed);
+      return parsed;
+    } catch (e) {
+      console.error('Failed to load playedPrompts from localStorage:', e);
+      return [];
+    }
+  });
 
   const generateGame = async (prompt, savedGameData = null) => {
     try {
@@ -230,7 +243,7 @@ function App() {
       }
       
       // Get next dungeon from another player, excluding already played ones
-      // Also exclude the current dungeon
+      // Also exclude the current dungeon and prompt
       const excludeList = [...playedDungeonIds];
       if (gameData?.dungeon_id) {
         excludeList.push(gameData.dungeon_id);
@@ -238,11 +251,20 @@ function App() {
       } else {
         console.warn('Current gameData has no dungeon_id:', gameData);
       }
+      
+      const excludePromptsList = [...playedPrompts];
+      if (gameData?.prompt) {
+        excludePromptsList.push(gameData.prompt);
+        console.log('Adding current prompt to exclude list:', gameData.prompt);
+      }
+      
       const excludeIds = excludeList.join(',');
+      const excludePromptsParam = excludePromptsList.join('|||'); // Use ||| as delimiter to avoid comma conflicts
       console.log('Excluding dungeon IDs:', excludeIds);
+      console.log('Excluding prompts:', excludePromptsParam);
       console.log('Exclude list length:', excludeList.length);
       
-      const apiUrl = `/api/get-next-dungeon?player_id=${playerId}&exclude_ids=${excludeIds}`;
+      const apiUrl = `/api/get-next-dungeon?player_id=${playerId}&exclude_ids=${excludeIds}&exclude_prompts=${encodeURIComponent(excludePromptsParam)}`;
       console.log('Fetching next dungeon from:', apiUrl);
       
       const dungeonResponse = await fetch(apiUrl);
@@ -271,6 +293,19 @@ function App() {
           localStorage.setItem('playedDungeonIds', JSON.stringify(updated));
         } catch (e) {
           console.error('Failed to save playedDungeonIds to localStorage:', e);
+        }
+        return updated;
+      });
+      
+      // Track this prompt as played
+      setPlayedPrompts(prev => {
+        const updated = [...prev, nextDungeon.prompt];
+        console.log('Updated playedPrompts:', updated);
+        // Persist to localStorage
+        try {
+          localStorage.setItem('playedPrompts', JSON.stringify(updated));
+        } catch (e) {
+          console.error('Failed to save playedPrompts to localStorage:', e);
         }
         return updated;
       });

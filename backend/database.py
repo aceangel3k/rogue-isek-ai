@@ -226,7 +226,7 @@ def save_shared_dungeon(
     
     return dungeon_db_id
 
-def get_random_shared_dungeon(exclude_player_id: Optional[str] = None, exclude_dungeon_ids: Optional[List[str]] = None) -> Optional[Dict[str, Any]]:
+def get_random_shared_dungeon(exclude_player_id: Optional[str] = None, exclude_dungeon_ids: Optional[List[str]] = None, exclude_prompts: Optional[List[str]] = None) -> Optional[Dict[str, Any]]:
     """Get a random shared dungeon from another player"""
     conn = get_connection()
     cursor = conn.cursor()
@@ -245,6 +245,13 @@ def get_random_shared_dungeon(exclude_player_id: Optional[str] = None, exclude_d
         conditions.append(f'dungeon_id NOT IN ({placeholders})')
         params.extend(exclude_dungeon_ids)
     
+    # Also exclude by prompt to avoid similar dungeons
+    if exclude_prompts:
+        print(f"Excluding {len(exclude_prompts)} prompts: {exclude_prompts}")
+        placeholders = ','.join(['?' for _ in exclude_prompts])
+        conditions.append(f'prompt NOT IN ({placeholders})')
+        params.extend(exclude_prompts)
+    
     if conditions:
         query += ' WHERE ' + ' AND '.join(conditions)
     
@@ -257,7 +264,7 @@ def get_random_shared_dungeon(exclude_player_id: Optional[str] = None, exclude_d
     dungeon = cursor.fetchone()
     
     if dungeon:
-        print(f"Found dungeon: {dict(dungeon)['dungeon_id']}")
+        print(f"Found dungeon: {dict(dungeon)['dungeon_id']} with prompt: {dict(dungeon)['prompt']}")
     else:
         print("No dungeons found matching criteria")
     

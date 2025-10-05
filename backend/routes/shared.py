@@ -13,6 +13,7 @@ def get_next_dungeon():
     try:
         player_id = request.args.get('player_id')
         exclude_ids = request.args.get('exclude_ids', '')  # Comma-separated list of dungeon IDs to exclude
+        exclude_prompts = request.args.get('exclude_prompts', '')  # Comma-separated list of prompts to exclude
         
         if not player_id:
             return jsonify({'error': 'player_id required'}), 400
@@ -20,8 +21,15 @@ def get_next_dungeon():
         # Parse excluded dungeon IDs
         excluded_dungeon_ids = [id.strip() for id in exclude_ids.split(',') if id.strip()]
         
+        # Parse excluded prompts
+        excluded_prompts = [p.strip() for p in exclude_prompts.split('|||') if p.strip()]
+        
         # Get random dungeon from another player, excluding already played ones
-        dungeon = get_random_shared_dungeon(exclude_player_id=player_id, exclude_dungeon_ids=excluded_dungeon_ids)
+        dungeon = get_random_shared_dungeon(
+            exclude_player_id=player_id, 
+            exclude_dungeon_ids=excluded_dungeon_ids,
+            exclude_prompts=excluded_prompts
+        )
         
         if not dungeon:
             return jsonify({

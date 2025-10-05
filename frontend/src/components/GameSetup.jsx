@@ -124,6 +124,7 @@ export default function GameSetup({ onGenerate, setGameState }) {
           <button
             onClick={() => {
               localStorage.removeItem('playedDungeonIds');
+              localStorage.removeItem('playedPrompts');
               alert('Played dungeons history cleared! You can now replay all dungeons.');
             }}
             className="retro-button"
