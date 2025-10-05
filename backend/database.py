@@ -240,6 +240,7 @@ def get_random_shared_dungeon(exclude_player_id: Optional[str] = None, exclude_d
         params.append(exclude_player_id)
     
     if exclude_dungeon_ids:
+        print(f"Excluding {len(exclude_dungeon_ids)} dungeon IDs: {exclude_dungeon_ids}")
         placeholders = ','.join(['?' for _ in exclude_dungeon_ids])
         conditions.append(f'dungeon_id NOT IN ({placeholders})')
         params.extend(exclude_dungeon_ids)
@@ -249,8 +250,17 @@ def get_random_shared_dungeon(exclude_player_id: Optional[str] = None, exclude_d
     
     query += ' ORDER BY RANDOM() LIMIT 1'
     
+    print(f"SQL Query: {query}")
+    print(f"SQL Params: {params}")
+    
     cursor.execute(query, params)
     dungeon = cursor.fetchone()
+    
+    if dungeon:
+        print(f"Found dungeon: {dict(dungeon)['dungeon_id']}")
+    else:
+        print("No dungeons found matching criteria")
+    
     conn.close()
     
     return dict(dungeon) if dungeon else None

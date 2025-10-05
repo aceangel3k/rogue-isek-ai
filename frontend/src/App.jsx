@@ -240,10 +240,12 @@ function App() {
       }
       const excludeIds = excludeList.join(',');
       console.log('Excluding dungeon IDs:', excludeIds);
+      console.log('Exclude list length:', excludeList.length);
       
-      const dungeonResponse = await fetch(
-        `/api/get-next-dungeon?player_id=${playerId}&exclude_ids=${excludeIds}`
-      );
+      const apiUrl = `/api/get-next-dungeon?player_id=${playerId}&exclude_ids=${excludeIds}`;
+      console.log('Fetching next dungeon from:', apiUrl);
+      
+      const dungeonResponse = await fetch(apiUrl);
       
       if (!dungeonResponse.ok) {
         throw new Error('Failed to load next dungeon');
@@ -258,6 +260,7 @@ function App() {
       
       const nextDungeon = dungeonData.dungeon;
       console.log('Loaded next dungeon:', nextDungeon.dungeon_id, 'from player:', nextDungeon.player_id);
+      console.log('Is this dungeon in exclude list?', excludeList.includes(nextDungeon.dungeon_id));
       
       // Track this dungeon as played
       setPlayedDungeonIds(prev => {
