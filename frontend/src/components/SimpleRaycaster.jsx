@@ -1558,7 +1558,7 @@ export default function SimpleRaycaster({ gameData, onPlayerMove, onLoadNextDung
           pointerEvents: 'auto' 
         }}
       >
-        {minimapVisible ? 'Hide Map (Tab)' : 'Show Map (Tab)'}
+        {minimapVisible ? 'Hide Map' : 'Show Map'}
       </button>
       
       {/* Weapon sprite (Wolfenstein style) - Responsive for mobile */}
