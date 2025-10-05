@@ -13,7 +13,16 @@ function App() {
   const [gameData, setGameData] = useState(null);
   const [playerPos, setPlayerPos] = useState({ x: 8, y: 8 });
   const [transitionData, setTransitionData] = useState(null);
-  const [playedDungeonIds, setPlayedDungeonIds] = useState([]); // Track dungeons played this session
+  
+  // Track dungeons played - persist to localStorage
+  const [playedDungeonIds, setPlayedDungeonIds] = useState(() => {
+    try {
+      const stored = localStorage.getItem('playedDungeonIds');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
 
   const generateGame = async (prompt, savedGameData = null) => {
     try {
@@ -251,6 +260,12 @@ function App() {
       setPlayedDungeonIds(prev => {
         const updated = [...prev, nextDungeon.dungeon_id];
         console.log('Updated playedDungeonIds:', updated);
+        // Persist to localStorage
+        try {
+          localStorage.setItem('playedDungeonIds', JSON.stringify(updated));
+        } catch (e) {
+          console.error('Failed to save playedDungeonIds to localStorage:', e);
+        }
         return updated;
       });
       

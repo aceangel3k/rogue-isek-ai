@@ -113,13 +113,25 @@ export default function GameSetup({ onGenerate, setGameState }) {
         </form>
         
         {/* Load Game Button */}
-        <div className="mb-8 text-center">
+        <div className="mb-8 text-center flex gap-4 justify-center">
           <button
             onClick={() => setShowSavedGames(true)}
             className="retro-button"
             disabled={isLoading}
           >
             [LOAD SAVED GAME]
+          </button>
+          <button
+            onClick={() => {
+              localStorage.removeItem('playedDungeonIds');
+              alert('Played dungeons history cleared! You can now replay all dungeons.');
+            }}
+            className="retro-button"
+            style={{ opacity: 0.7 }}
+            disabled={isLoading}
+            title="Clear the list of played dungeons to replay them"
+          >
+            [RESET DUNGEON HISTORY]
           </button>
         </div>
         
