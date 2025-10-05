@@ -41,6 +41,81 @@ function App() {
         data = await response.json();
       }
       
+      // If loading from save, regenerate images (they were stripped to save space)
+      if (savedGameData) {
+        console.log('Regenerating images from cache...');
+        
+        // Regenerate textures
+        if (data.textures && data.textures.length > 0) {
+          try {
+            const texturesResponse = await fetch('/api/generate-textures', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                theme: data.theme
+              })
+            });
+            
+            if (texturesResponse.ok) {
+              const texturesData = await texturesResponse.json();
+              data.textures = texturesData.textures;
+              console.log('✓ Textures regenerated from cache');
+            }
+          } catch (textureError) {
+            console.error('Failed to regenerate textures:', textureError);
+          }
+        }
+        
+        // Regenerate sprites
+        if (data.sprites && data.sprites.length > 0) {
+          try {
+            // Rebuild character list from stripped sprite metadata
+            const characters = [];
+            
+            // Add enemies
+            if (data.enemies) {
+              data.enemies.forEach(enemy => {
+                characters.push({
+                  id: enemy.id,
+                  type: 'enemy',
+                  description: enemy.description || `${enemy.name} enemy`,
+                  directions: 4
+                });
+              });
+            }
+            
+            // Add NPCs
+            if (data.npcs) {
+              data.npcs.forEach(npc => {
+                characters.push({
+                  id: npc.id,
+                  type: 'npc',
+                  description: npc.description || `${npc.name} merchant`,
+                  directions: 4
+                });
+              });
+            }
+            
+            const spritesResponse = await fetch('/api/generate-sprites', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                characters: characters,
+                theme: data.theme
+              })
+            });
+            
+            if (spritesResponse.ok) {
+              const spritesData = await spritesResponse.json();
+              data.sprites = spritesData.sprites;
+              console.log('✓ Sprites regenerated from cache');
+            }
+          } catch (spriteError) {
+            console.error('Failed to regenerate sprites:', spriteError);
+          }
+        }
+      }
+      
       // Generate HUD frame and weapon sprite before showing the game
       console.log('Generating HUD frame...');
       try {
