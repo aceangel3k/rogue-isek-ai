@@ -218,7 +218,17 @@ function App() {
       }
       
       // Get next dungeon from another player, excluding already played ones
-      const excludeIds = playedDungeonIds.join(',');
+      // Also exclude the current dungeon
+      const excludeList = [...playedDungeonIds];
+      if (gameData?.dungeon_id) {
+        excludeList.push(gameData.dungeon_id);
+        console.log('Adding current dungeon_id to exclude list:', gameData.dungeon_id);
+      } else {
+        console.warn('Current gameData has no dungeon_id:', gameData);
+      }
+      const excludeIds = excludeList.join(',');
+      console.log('Excluding dungeon IDs:', excludeIds);
+      
       const dungeonResponse = await fetch(
         `/api/get-next-dungeon?player_id=${playerId}&exclude_ids=${excludeIds}`
       );
@@ -235,9 +245,14 @@ function App() {
       }
       
       const nextDungeon = dungeonData.dungeon;
+      console.log('Loaded next dungeon:', nextDungeon.dungeon_id, 'from player:', nextDungeon.player_id);
       
       // Track this dungeon as played
-      setPlayedDungeonIds(prev => [...prev, nextDungeon.dungeon_id]);
+      setPlayedDungeonIds(prev => {
+        const updated = [...prev, nextDungeon.dungeon_id];
+        console.log('Updated playedDungeonIds:', updated);
+        return updated;
+      });
       
       // Generate story patch
       const patchResponse = await fetch('/api/patch-story', {
