@@ -1,0 +1,9 @@
+generated_textures/
+generated_sprites/
+texture_cache/
+cache/
+*.db
+*.pyc
+.env
+.db
+__pycache__

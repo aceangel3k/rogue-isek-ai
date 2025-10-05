@@ -1,0 +1,75 @@
+import { useState } from 'react';
+
+export default function StoryIntro({ gameData, onContinue }) {
+  const [isVisible, setIsVisible] = useState(true);
+
+  const handleContinue = () => {
+    setIsVisible(false);
+    if (onContinue) {
+      onContinue();
+    }
+  };
+
+  if (!isVisible) return null;
+
+  const story = gameData?.story || {};
+  const theme = gameData?.theme || {};
+  const title = story.title || 'The Dungeon Awaits';
+  const narrative = story.narrative || story.intro || 'Your adventure begins...';
+  const winCondition = story.win_condition || 'Survive and escape.';
+  const primaryColor = theme.primary_color || '#10b981';
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-50 p-4">
+      <div className="max-w-3xl w-full">
+        {/* Title */}
+        <div className="text-center mb-8">
+          <h1 
+            className="text-5xl font-bold mb-4"
+            style={{ color: primaryColor, textShadow: `0 0 5px ${primaryColor}` }}
+          >
+            &gt; {title.toUpperCase()}
+          </h1>
+          {theme.atmosphere && (
+            <p className="text-lg" style={{ color: '#666' }}>
+              [{theme.atmosphere.toUpperCase()}]
+            </p>
+          )}
+        </div>
+
+        {/* Story Narrative */}
+        <div 
+          className="retro-panel p-8 mb-6"
+        >
+          <div className="text-xl leading-relaxed mb-6" style={{ color: primaryColor }}>
+            {narrative}
+          </div>
+          
+          {/* Objective */}
+          <div style={{ borderTop: `2px solid ${primaryColor}`, paddingTop: '16px' }}>
+            <div className="text-sm mb-2" style={{ color: '#666' }}>&gt; OBJECTIVE:</div>
+            <div 
+              className="text-lg font-bold"
+              style={{ color: primaryColor }}
+            >
+              {winCondition}
+            </div>
+          </div>
+        </div>
+
+        {/* Continue Button */}
+        <div className="text-center">
+          <button
+            onClick={handleContinue}
+            className="px-8 py-4 retro-button font-bold text-xl"
+          >
+            [BEGIN ADVENTURE]
+          </button>
+          <p className="text-sm mt-4" style={{ color: '#666' }}>
+            &gt; PRESS ANY KEY OR CLICK TO START
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
