@@ -26,7 +26,7 @@ function App() {
         data = savedGameData;
       } else {
         // Otherwise, generate new game
-        const response = await fetch('http://localhost:5001/api/generate-game', {
+        const response = await fetch('/api/generate-game', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -44,7 +44,7 @@ function App() {
       // Generate HUD frame and weapon sprite before showing the game
       console.log('Generating HUD frame...');
       try {
-        const hudResponse = await fetch('http://localhost:5001/api/generate-hud', {
+        const hudResponse = await fetch('/api/generate-hud', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -63,7 +63,7 @@ function App() {
       
       console.log('Generating weapon sprite...');
       try {
-        const weaponResponse = await fetch('http://localhost:5001/api/generate-weapon', {
+        const weaponResponse = await fetch('/api/generate-weapon', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -114,7 +114,7 @@ function App() {
       // Get next dungeon from another player, excluding already played ones
       const excludeIds = playedDungeonIds.join(',');
       const dungeonResponse = await fetch(
-        `http://localhost:5001/api/get-next-dungeon?player_id=${playerId}&exclude_ids=${excludeIds}`
+        `/api/get-next-dungeon?player_id=${playerId}&exclude_ids=${excludeIds}`
       );
       
       if (!dungeonResponse.ok) {
@@ -134,7 +134,7 @@ function App() {
       setPlayedDungeonIds(prev => [...prev, nextDungeon.dungeon_id]);
       
       // Generate story patch
-      const patchResponse = await fetch('http://localhost:5001/api/patch-story', {
+      const patchResponse = await fetch('/api/patch-story', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -189,7 +189,7 @@ function App() {
     const data = transitionData.nextGameData;
     
     try {
-      const hudResponse = await fetch('http://localhost:5001/api/generate-hud', {
+      const hudResponse = await fetch('/api/generate-hud', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ theme: data.theme })
@@ -204,7 +204,7 @@ function App() {
     }
     
     try {
-      const weaponResponse = await fetch('http://localhost:5001/api/generate-weapon', {
+      const weaponResponse = await fetch('/api/generate-weapon', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ weapon: 'pistol', theme: data.theme })
