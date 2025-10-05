@@ -495,10 +495,21 @@ export default function SimpleRaycaster({ gameData, onPlayerMove, onLoadNextDung
         
         // Load sprite textures from AI-generated sprites
         if (gameData.sprites && gameData.sprites.length > 0) {
-          console.log('Loading sprite textures...');
+          console.log('Loading sprite textures...', gameData.sprites.length, 'sprites');
           const loadSprites = async () => {
             for (const spriteData of gameData.sprites) {
               try {
+                // Debug: Check if sprite_sheet exists and is valid
+                if (!spriteData.sprite_sheet) {
+                  console.error(`Missing sprite_sheet for ${spriteData.id}:`, spriteData);
+                  continue;
+                }
+                
+                if (!spriteData.sprite_sheet.startsWith('data:image')) {
+                  console.error(`Invalid sprite_sheet format for ${spriteData.id}:`, spriteData.sprite_sheet.substring(0, 100));
+                  continue;
+                }
+                
                 const img = new Image();
                 img.crossOrigin = 'anonymous'; // Allow cross-origin images
                 
@@ -509,6 +520,7 @@ export default function SimpleRaycaster({ gameData, onPlayerMove, onLoadNextDung
                   };
                   img.onerror = (e) => {
                     console.error(`Image load error for ${spriteData.id}:`, e);
+                    console.error(`Sprite data:`, spriteData);
                     reject(e);
                   };
                   img.src = spriteData.sprite_sheet;

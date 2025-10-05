@@ -19,6 +19,18 @@ function App() {
     try {
       setGameState('loading');
       
+      console.log('generateGame called with savedGameData:', !!savedGameData);
+      if (savedGameData) {
+        console.log('Saved game data structure:', {
+          hasEnemies: !!savedGameData.enemies,
+          hasNPCs: !!savedGameData.npcs,
+          hasSprites: !!savedGameData.sprites,
+          enemyCount: savedGameData.enemies?.length,
+          npcCount: savedGameData.npcs?.length,
+          spriteCount: savedGameData.sprites?.length
+        });
+      }
+      
       let data;
       
       // If loading from save, use saved data directly
@@ -115,6 +127,18 @@ function App() {
                 const spritesData = await spritesResponse.json();
                 data.sprites = spritesData.sprites;
                 console.log('✓ Sprites regenerated from cache:', data.sprites.length);
+                // Debug: Check first sprite
+                if (data.sprites.length > 0) {
+                  const firstSprite = data.sprites[0];
+                  console.log('First sprite sample:', {
+                    id: firstSprite.id,
+                    type: firstSprite.type,
+                    has_sprite_sheet: !!firstSprite.sprite_sheet,
+                    sprite_sheet_preview: firstSprite.sprite_sheet?.substring(0, 50)
+                  });
+                }
+              } else {
+                console.error('Failed to regenerate sprites:', spritesResponse.status, await spritesResponse.text());
               }
             }
           } catch (spriteError) {
