@@ -66,10 +66,9 @@ cd backend
 
 # Create virtual environment
 python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-# Install dependencies
-pip install -r requirements.txt
+# Install dependencies (using venv's pip)
+venv/bin/pip install -r requirements.txt
 
 # Create .env file
 cat > .env << EOF
@@ -80,13 +79,19 @@ SECRET_KEY=your_random_secret_key
 EOF
 
 # Initialize database
-python -c "from database import init_database; init_database()"
+venv/bin/python -c "from database import init_database; init_database()"
 
-# Run backend server
+# Run backend server (Option 1: using run script)
+./run.sh
+
+# OR Option 2: activate venv first, then run
+source venv/bin/activate
 python app.py
 ```
 
 Backend will run on `http://localhost:5001`
+
+**Important**: Always use `venv/bin/python` or activate the venv with `source venv/bin/activate` before running Python commands.
 
 #### 3. Frontend Setup
 
