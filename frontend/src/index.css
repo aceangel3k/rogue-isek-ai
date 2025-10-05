@@ -21,4 +21,52 @@ body {
   min-height: 100vh;
   background-color: #0c0c0c;
   color: rgba(255, 255, 255, 0.87);
+  
+  /* Enable smooth scrolling on mobile */
+  -webkit-overflow-scrolling: touch;
+  
+  /* Prevent text selection on mobile during gameplay */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+  
+  /* Prevent tap highlight on mobile */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Allow text selection in input fields */
+input, textarea {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  user-select: text;
+}
+
+/* Ensure proper mobile viewport handling - but allow scrolling by default */
+html {
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  width: 100%;
+  min-height: 100%;
+}
+
+#root {
+  width: 100%;
+  min-height: 100%;
+}
+
+/* Only prevent scrolling and pull-to-refresh during gameplay (when game is active) */
+body.game-active {
+  position: fixed;
+  overflow: hidden;
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body.game-active #root {
+  overflow: hidden;
+  height: 100%;
+  overscroll-behavior: none;
 }

@@ -9,6 +9,7 @@ import ShopModal from './ShopModal';
 import CompletionScreen from './CompletionScreen';
 import GameOverScreen from './GameOverScreen';
 import StoryIntro from './StoryIntro';
+import MobileControls from './MobileControls';
 
 // Utility: Get or create player ID
 function getPlayerId() {
@@ -34,6 +35,9 @@ export default function SimpleRaycaster({ gameData, onPlayerMove, onLoadNextDung
     turnLeft: false,
     turnRight: false
   });
+  
+  // Mobile touch controls state
+  const mobileMovementRef = useRef({ x: 0, y: 0, angle: 0, magnitude: 0 });
   const angleRef = useRef(Math.PI); // facing left initially
   
   // Generate procedural dungeon using BSP algorithm
@@ -185,9 +189,12 @@ export default function SimpleRaycaster({ gameData, onPlayerMove, onLoadNextDung
     spriteCanvas.style.position = 'absolute';
     spriteCanvas.style.top = '0';
     spriteCanvas.style.left = '0';
+    spriteCanvas.style.width = '100%';
+    spriteCanvas.style.height = '100%';
     spriteCanvas.style.pointerEvents = 'none';
     spriteCanvas.style.zIndex = '10';
     spriteCanvas.style.transition = 'transform 0.05s ease-out';
+    spriteCanvas.style.imageRendering = 'pixelated';
     mount.appendChild(spriteCanvas);
     const spriteCtx = spriteCanvas.getContext('2d');
     
@@ -833,10 +840,13 @@ export default function SimpleRaycaster({ gameData, onPlayerMove, onLoadNextDung
         let x = p.x;
         let y = p.y;
         
-        // Update orientation from angle (mouse look + arrow keys + shake)
+        // Update orientation from angle (mouse look + arrow keys + mobile touch + shake)
         const rotSpeed = 3.0;
         const inputTurn = (keysRef.current.turnRight ? 1 : 0) + (keysRef.current.turnLeft ? -1 : 0);
-        angleRef.current += inputTurn * rotSpeed * dt;
+        
+        // Add mobile joystick rotation
+        const mobileRotation = mobileMovementRef.current.x * rotSpeed * 1.5; // 1.5x multiplier for smoother mobile control
+        angleRef.current += (inputTurn * rotSpeed + mobileRotation) * dt;
         
         // Apply shake to angle
         const shakenAngle = angleRef.current + shakeRef.current.angle;
@@ -851,10 +861,23 @@ export default function SimpleRaycaster({ gameData, onPlayerMove, onLoadNextDung
         // Movement speed
         const walkSpeed = 3.0;
         
-        // Forward/backward
+        // Forward/backward (keyboard + mobile)
         const inputMove = (keysRef.current.forward ? 1 : 0) + (keysRef.current.backward ? -1 : 0);
-        if (inputMove !== 0) {
-          const step = inputMove * walkSpeed * dt;
+        const mobileForward = -mobileMovementRef.current.y * mobileMovementRef.current.magnitude;
+        const totalMove = inputMove + mobileForward;
+        
+        // Debug: Log mobile movement (remove after testing)
+        if (mobileMovementRef.current.magnitude > 0) {
+          console.log('Mobile movement:', {
+            y: mobileMovementRef.current.y,
+            magnitude: mobileMovementRef.current.magnitude,
+            mobileForward,
+            totalMove
+          });
+        }
+        
+        if (totalMove !== 0) {
+          const step = totalMove * walkSpeed * dt;
           const tx = x + dirX * step;
           const ty = y + dirY * step;
           // Check collision (allow movement through floor tiles and exit portal)
@@ -1422,11 +1445,21 @@ export default function SimpleRaycaster({ gameData, onPlayerMove, onLoadNextDung
       
       rafIdRef.current = requestAnimationFrame(animate);
       
-      // Handle resize
+      // Handle resize - sync all layers
       const handleResize = () => {
         const w = window.innerWidth;
         const h = window.innerHeight;
+        
+        // Resize WebGL renderer
         renderer.setSize(w, h);
+        
+        // Resize sprite canvas overlay to match
+        if (spriteCanvas) {
+          spriteCanvas.width = w;
+          spriteCanvas.height = h;
+        }
+        
+        // Update shader uniforms
         if (materialRef.current) {
           materialRef.current.uniforms.uResolution.value.set(w, h);
         }
@@ -1460,7 +1493,7 @@ export default function SimpleRaycaster({ gameData, onPlayerMove, onLoadNextDung
   return (
     <div className="w-full h-screen relative" style={{ position: 'relative' }}>
       {/* Three.js mount point - no React children */}
-      <div ref={mountRef} className="w-full h-screen" />
+      <div ref={mountRef} className="w-full h-screen" style={{ zIndex: 0 }} />
       
       {/* Screen flash overlay */}
       {flashColor && (
@@ -1514,10 +1547,10 @@ export default function SimpleRaycaster({ gameData, onPlayerMove, onLoadNextDung
         </div>
       )}
       
-      {/* Minimap toggle button */}
+      {/* Minimap toggle button - Hidden on mobile (use mobile controls instead) */}
       <button
         onClick={() => setMinimapVisible(prev => !prev)}
-        className="absolute bg-black bg-opacity-70 text-white px-3 py-2 rounded border border-white hover:bg-opacity-90 transition-all text-sm"
+        className="hidden sm:block absolute bg-black bg-opacity-70 text-white px-3 py-2 rounded border border-white hover:bg-opacity-90 transition-all text-sm"
         style={{ 
           top: minimapVisible ? '220px' : '16px',
           right: '16px',
@@ -1528,7 +1561,7 @@ export default function SimpleRaycaster({ gameData, onPlayerMove, onLoadNextDung
         {minimapVisible ? 'Hide Map (Tab)' : 'Show Map (Tab)'}
       </button>
       
-      {/* Weapon sprite (Wolfenstein style) */}
+      {/* Weapon sprite (Wolfenstein style) - Responsive for mobile */}
       {weaponSprite && (
         <div 
           className="absolute left-1/2 pointer-events-none"
@@ -1565,9 +1598,8 @@ export default function SimpleRaycaster({ gameData, onPlayerMove, onLoadNextDung
             <img 
               src={weaponSprite.src}
               alt="Weapon"
-              className="block"
+              className="block w-48 landscape:max-h-[844px]:w-40 sm:w-64 md:w-96 lg:w-[400px]"
               style={{
-                width: '400px',
                 height: 'auto',
                 imageRendering: 'pixelated',
                 filter: muzzleFlash ? 'brightness(1.5)' : 'none'
@@ -1627,11 +1659,11 @@ export default function SimpleRaycaster({ gameData, onPlayerMove, onLoadNextDung
         
         if (dist < 2.5 && !shopOpen) {
           return (
-            <div className="absolute bottom-32 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-90 text-white px-6 py-3 rounded-lg border-2 border-cyan-400 z-50 shadow-lg">
-              <p className="text-lg font-bold">
-                Press <kbd className="px-2 py-1 bg-gray-700 rounded mx-1">E</kbd> to talk to {gameData?.npcs?.[0]?.name || 'Merchant'}
+            <div className="absolute bottom-24 sm:bottom-32 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-90 text-white px-3 sm:px-6 py-2 sm:py-3 rounded-lg border-2 border-cyan-400 z-50 shadow-lg max-w-xs sm:max-w-none">
+              <p className="text-sm sm:text-lg font-bold text-center">
+                Press <kbd className="px-1 sm:px-2 py-1 bg-gray-700 rounded mx-1 text-xs sm:text-base">E</kbd> to talk to {gameData?.npcs?.[0]?.name || 'Merchant'}
               </p>
-              <p className="text-xs text-gray-400 mt-1">Distance: {dist.toFixed(1)} tiles</p>
+              <p className="text-xs text-gray-400 mt-1 text-center">Distance: {dist.toFixed(1)} tiles</p>
             </div>
           );
         }
@@ -1652,13 +1684,13 @@ export default function SimpleRaycaster({ gameData, onPlayerMove, onLoadNextDung
         if (dist < 3.0) {
           return (
             <div 
-              className="absolute bottom-32 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-90 text-white px-6 py-3 rounded-lg border-2 z-50 shadow-lg animate-pulse"
+              className="absolute bottom-24 sm:bottom-32 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-90 text-white px-3 sm:px-6 py-2 sm:py-3 rounded-lg border-2 z-50 shadow-lg animate-pulse max-w-xs sm:max-w-none"
               style={{ borderColor: themeColor }}
             >
-              <p className="text-lg font-bold" style={{ color: themeColor }}>
+              <p className="text-sm sm:text-lg font-bold text-center" style={{ color: themeColor }}>
                 ✨ Exit Portal Ahead ✨
               </p>
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs text-gray-400 mt-1 text-center">
                 {dist < 1.5 ? 'Step forward to complete the level!' : `Distance: ${dist.toFixed(1)} tiles`}
               </p>
             </div>
@@ -1716,6 +1748,69 @@ export default function SimpleRaycaster({ gameData, onPlayerMove, onLoadNextDung
             window.location.reload();
           }}
         />
+      )}
+      
+      {/* Mobile Touch Controls - Hidden during story intro */}
+      {!showStoryIntro && (
+        <MobileControls
+          onMove={(movement) => {
+            mobileMovementRef.current = movement;
+          }}
+        onShoot={() => {
+          // Trigger shoot action
+          const p = playerRef.current;
+          const enemies = enemyManagerRef.current.getAliveEnemies();
+          const result = combatManagerRef.current.shoot(p.x, p.y, p.dirX, p.dirY, enemies, mapData, mapSize);
+          
+          if (result.fired) {
+            // White flash when shooting
+            setFlashColor('rgba(255, 255, 255, 0.3)');
+            setFlashOpacity(1);
+            setTimeout(() => {
+              setFlashOpacity(0);
+              setTimeout(() => setFlashColor(null), 150);
+            }, 50);
+            
+            // Muzzle flash
+            setMuzzleFlash(true);
+            setTimeout(() => setMuzzleFlash(false), 100);
+            
+            // Weapon recoil
+            const recoilAmount = result.hit ? 30 : 20;
+            setWeaponRecoil(recoilAmount);
+            setTimeout(() => setWeaponRecoil(0), result.hit ? 120 : 100);
+            
+            if (result.hit && result.died) {
+              const goldDrop = Math.floor(Math.random() * 20) + 10;
+              setPlayerGold(prev => prev + goldDrop);
+            }
+          }
+        }}
+        onInteract={() => {
+          // E key equivalent - open shop when near NPC
+          if (npcPositionRef.current && !shopOpen) {
+            const p = playerRef.current;
+            const dx = p.x - npcPositionRef.current.x;
+            const dy = p.y - npcPositionRef.current.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            if (dist < 2.5) {
+              // Release pointer lock to allow UI interaction
+              if (document.pointerLockElement) {
+                document.exitPointerLock();
+              }
+              setTimeout(() => {
+                setShopOpen(true);
+                gamePausedRef.current = true;
+              }, 100);
+            }
+          }
+        }}
+        onToggleMinimap={() => {
+          setMinimapVisible(prev => !prev);
+        }}
+        disabled={shopOpen || levelComplete || gameOver || showStoryIntro}
+      />
       )}
     </div>
   );

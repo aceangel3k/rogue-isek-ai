@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import GameSetup from './components/GameSetup';
 import LoadingScreen from './components/LoadingScreen';
 import SimpleRaycaster from './components/SimpleRaycaster';
@@ -13,6 +13,19 @@ function App() {
   const [gameData, setGameData] = useState(null);
   const [playerPos, setPlayerPos] = useState({ x: 8, y: 8 });
   const [transitionData, setTransitionData] = useState(null);
+  
+  // Add/remove game-active class to body based on game state
+  useEffect(() => {
+    if (gameState === 'playing') {
+      document.body.classList.add('game-active');
+    } else {
+      document.body.classList.remove('game-active');
+    }
+    
+    return () => {
+      document.body.classList.remove('game-active');
+    };
+  }, [gameState]);
   
   // Track dungeons played - persist to localStorage
   const [playedDungeonIds, setPlayedDungeonIds] = useState(() => {

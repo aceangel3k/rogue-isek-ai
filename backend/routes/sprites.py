@@ -8,6 +8,9 @@ from dotenv import load_dotenv
 import requests
 from datetime import datetime
 import sys
+from PIL import Image
+from io import BytesIO
+import numpy as np
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utils.google_genai_helper import generate_image_with_gemini
 from utils.cache import get_cached, set_cached
@@ -18,6 +21,12 @@ load_dotenv()
 # Create sprites directory if it doesn't exist
 SPRITES_DIR = os.path.join(os.path.dirname(__file__), '..', 'generated_sprites')
 os.makedirs(SPRITES_DIR, exist_ok=True)
+
+# Cache directory
+CACHE_DIR = os.path.join(os.path.dirname(__file__), '..', 'cache')
+
+# Flag to track if we've processed cached sprites
+_cached_sprites_processed = False
 
 def save_sprite_to_disk(sprite_data, game_id):
     """Save sprite to disk as PNG file"""
@@ -49,6 +58,173 @@ def save_sprite_to_disk(sprite_data, game_id):
     except Exception as e:
         print(f"Error saving sprite to disk: {e}")
         return None
+
+def remove_solid_background(base64_image, tolerance=30):
+    """
+    Remove solid color backgrounds from sprites and make them transparent.
+    Detects the most common background color (usually corners) and removes it.
+    """
+    try:
+        # Decode base64 to image
+        if base64_image.startswith('data:'):
+            base64_data = base64_image.split(',', 1)[1]
+        else:
+            base64_data = base64_image
+        
+        image_bytes = base64.b64decode(base64_data)
+        img = Image.open(BytesIO(image_bytes))
+        
+        # Convert to RGBA if not already
+        if img.mode != 'RGBA':
+            img = img.convert('RGBA')
+        
+        # Get image data as numpy array
+        data = np.array(img)
+        
+        # Check if image already has transparency
+        # If more than 5% of pixels are already transparent, skip processing
+        alpha_channel = data[:, :, 3]
+        transparent_pixels = np.sum(alpha_channel < 255)
+        total_pixels = alpha_channel.size
+        transparency_ratio = transparent_pixels / total_pixels
+        
+        if transparency_ratio > 0.05:  # More than 5% already transparent
+            print("  → Image already has transparency, skipping background removal")
+            return base64_image
+        
+        # Sample corner pixels to determine background color
+        # Check all four corners and take the most common color
+        corners = [
+            data[0, 0],  # Top-left
+            data[0, -1],  # Top-right
+            data[-1, 0],  # Bottom-left
+            data[-1, -1]  # Bottom-right
+        ]
+        
+        # Use the first corner as background color (most common case)
+        bg_color = corners[0][:3]  # RGB only
+        
+        # Create mask for pixels similar to background color
+        r, g, b, a = data[:, :, 0], data[:, :, 1], data[:, :, 2], data[:, :, 3]
+        
+        # Calculate color distance from background
+        color_diff = np.sqrt(
+            (r.astype(int) - int(bg_color[0])) ** 2 +
+            (g.astype(int) - int(bg_color[1])) ** 2 +
+            (b.astype(int) - int(bg_color[2])) ** 2
+        )
+        
+        # Make pixels transparent if they're close to background color
+        mask = color_diff <= tolerance
+        data[mask, 3] = 0  # Set alpha to 0 (transparent)
+        
+        # Create new image with transparency
+        result_img = Image.fromarray(data, 'RGBA')
+        
+        # Convert back to base64
+        buffer = BytesIO()
+        result_img.save(buffer, format='PNG')
+        result_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+        
+        return f"data:image/png;base64,{result_base64}"
+        
+    except Exception as e:
+        print(f"Error removing background: {e}")
+        # Return original image if processing fails
+        return base64_image
+
+def process_cached_sprites_once():
+    """
+    Process all cached sprites to remove backgrounds on first request.
+    This runs automatically once per server startup.
+    """
+    global _cached_sprites_processed
+    
+    if _cached_sprites_processed:
+        return
+    
+    print("\n" + "="*60)
+    print("Auto-processing cached sprites (one-time on startup)...")
+    print("="*60)
+    
+    try:
+        if not os.path.exists(CACHE_DIR):
+            print("No cache directory found, skipping.")
+            _cached_sprites_processed = True
+            return
+        
+        sprite_files = [f for f in os.listdir(CACHE_DIR) if f.startswith('sprite_') and f.endswith('.json')]
+        
+        if not sprite_files:
+            print("No cached sprites found.")
+            _cached_sprites_processed = True
+            return
+        
+        print(f"Found {len(sprite_files)} cached sprites to process")
+        
+        processed = 0
+        skipped = 0
+        
+        for filename in sprite_files:
+            filepath = os.path.join(CACHE_DIR, filename)
+            try:
+                with open(filepath, 'r') as f:
+                    content = f.read().strip()
+                
+                # The cache stores JSON as a quoted string, so we need to parse it twice
+                # First parse removes the outer quotes and escaping
+                try:
+                    # Try parsing once (normal JSON)
+                    sprite_data = json.loads(content)
+                    # If it's still a string, parse again (double-encoded)
+                    if isinstance(sprite_data, str):
+                        sprite_data = json.loads(sprite_data)
+                except (json.JSONDecodeError, TypeError) as e:
+                    print(f"Could not parse {filename}: {e}")
+                    continue
+                
+                # Check if already processed (has transparent pixels)
+                needs_processing = False
+                
+                if 'weapon' in sprite_data:
+                    original_sprite = sprite_data['sprite']
+                    # Quick check: if it's already been processed, skip
+                    if 'processed_bg' not in sprite_data:
+                        print(f"Processing weapon: {sprite_data['weapon']}")
+                        processed_sprite = remove_solid_background(original_sprite, tolerance=40)
+                        sprite_data['sprite'] = processed_sprite
+                        sprite_data['processed_bg'] = True
+                        needs_processing = True
+                    else:
+                        skipped += 1
+                        
+                elif 'sprite_sheet' in sprite_data:
+                    original_sprite = sprite_data['sprite_sheet']
+                    if 'processed_bg' not in sprite_data:
+                        print(f"Processing character: {sprite_data.get('id', 'unknown')}")
+                        processed_sprite = remove_solid_background(original_sprite, tolerance=35)
+                        sprite_data['sprite_sheet'] = processed_sprite
+                        sprite_data['processed_bg'] = True
+                        needs_processing = True
+                    else:
+                        skipped += 1
+                
+                if needs_processing:
+                    # Save back as JSON string (matching cache format)
+                    with open(filepath, 'w') as f:
+                        json.dump(json.dumps(sprite_data), f, indent=2)
+                    processed += 1
+                    
+            except Exception as e:
+                print(f"Error processing {filename}: {e}")
+        
+        print(f"✓ Processed: {processed}, Skipped (already processed): {skipped}")
+        print("="*60 + "\n")
+        
+    except Exception as e:
+        print(f"Error in auto-processing: {e}")
+    finally:
+        _cached_sprites_processed = True
 
 def download_image_as_base64(image_url):
     """Download image from URL and convert to base64 data URL"""
@@ -141,6 +317,11 @@ Clear icon-like design, centered, retro game aesthetic."""
             
             if image_url:
                 base64_image = download_image_as_base64(image_url)
+                
+                # Remove solid background to make it transparent
+                print(f"Removing background from sprite '{char_id}'...")
+                base64_image = remove_solid_background(base64_image, tolerance=35)
+                
                 print(f"✓ Successfully generated sprite '{char_id}' with gpt-image-1")
             else:
                 print(f"gpt-image-1 returned no image, trying Gemini...")
@@ -162,6 +343,11 @@ Clear icon-like design, centered, retro game aesthetic."""
                     
                     if result.get("image"):
                         base64_image = result["image"]
+                        
+                        # Remove solid background to make it transparent
+                        print(f"Removing background from Gemini sprite '{char_id}'...")
+                        base64_image = remove_solid_background(base64_image, tolerance=35)
+                        
                         print(f"✓ Successfully generated sprite '{char_id}' with Gemini")
                 except Exception as gemini_error:
                     print(f"Gemini also failed: {str(gemini_error)}")
@@ -253,6 +439,11 @@ ONLY the weapon and hands from first-person view."""
                 raise ValueError("Model returned no image data")
             
             base64_image = download_image_as_base64(image_url)
+            
+            # Remove solid background to make it transparent
+            print(f"Removing background from weapon sprite '{weapon_name}'...")
+            base64_image = remove_solid_background(base64_image, tolerance=40)
+            
             print(f"✓ Successfully generated weapon sprite '{weapon_name}'")
             
         except Exception as e:
@@ -268,6 +459,11 @@ ONLY the weapon and hands from first-person view."""
                     )
                     if result.get("image"):
                         base64_image = result["image"]
+                        
+                        # Remove solid background to make it transparent
+                        print(f"Removing background from Gemini weapon sprite '{weapon_name}'...")
+                        base64_image = remove_solid_background(base64_image, tolerance=40)
+                        
                         print(f"✓ Generated weapon sprite with Gemini")
                     else:
                         raise ValueError("Gemini returned no image")
@@ -297,6 +493,9 @@ ONLY the weapon and hands from first-person view."""
 
 def generate_sprites():
     """Generate character sprites for NPCs, enemies, and items"""
+    # Auto-process cached sprites on first request
+    process_cached_sprites_once()
+    
     try:
         # Get the request data
         data = request.get_json()

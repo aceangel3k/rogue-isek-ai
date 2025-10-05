@@ -65,17 +65,17 @@ export default function HUD({ gameData, playerHealth = 100, maxHealth = 100, amm
         />
       )}
       
-      {/* Bottom HUD bar */}
-      <div className="absolute bottom-0 left-0 right-0 p-4">
+      {/* Bottom HUD bar - Responsive for mobile */}
+      <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-4">
         <div className="flex items-end justify-between max-w-6xl mx-auto">
           {/* Left side - Health */}
-          <div className="flex flex-col gap-2">
-            <div className="text-white font-bold text-sm uppercase tracking-wider drop-shadow-lg">
+          <div className="flex flex-col gap-1 sm:gap-2">
+            <div className="text-white font-bold text-xs sm:text-sm uppercase tracking-wider drop-shadow-lg">
               Health
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               {/* Health bar */}
-              <div className="w-48 h-8 bg-black bg-opacity-70 border-2 border-white rounded overflow-hidden">
+              <div className="w-24 sm:w-48 h-6 sm:h-8 bg-black bg-opacity-70 border-2 border-white rounded overflow-hidden">
                 <div 
                   className="h-full transition-all duration-300 ease-out"
                   style={{
@@ -87,7 +87,7 @@ export default function HUD({ gameData, playerHealth = 100, maxHealth = 100, amm
               </div>
               {/* Health number */}
               <div 
-                className="text-3xl font-bold drop-shadow-lg"
+                className="text-xl sm:text-3xl font-bold drop-shadow-lg"
                 style={{ color: getHealthColor() }}
               >
                 {Math.max(0, Math.floor(playerHealth))}
@@ -95,8 +95,8 @@ export default function HUD({ gameData, playerHealth = 100, maxHealth = 100, amm
             </div>
           </div>
           
-          {/* Center - Ammo */}
-          <div className="flex flex-col items-center gap-2">
+          {/* Center - Ammo (hidden on very small screens) */}
+          <div className="hidden sm:flex flex-col items-center gap-2">
             <div className="text-white font-bold text-sm uppercase tracking-wider drop-shadow-lg">
               Ammo
             </div>
@@ -106,23 +106,23 @@ export default function HUD({ gameData, playerHealth = 100, maxHealth = 100, amm
           </div>
           
           {/* Right side - Gold & Kills */}
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-1 sm:gap-3">
             {/* Gold */}
-            <div className="flex items-center gap-3 justify-end">
-              <div className="text-white font-bold text-sm uppercase tracking-wider drop-shadow-lg">
+            <div className="flex items-center gap-2 sm:gap-3 justify-end">
+              <div className="text-white font-bold text-xs sm:text-sm uppercase tracking-wider drop-shadow-lg">
                 Gold
               </div>
-              <div className="text-2xl font-bold text-yellow-300 drop-shadow-lg">
+              <div className="text-lg sm:text-2xl font-bold text-yellow-300 drop-shadow-lg">
                 {gold}
               </div>
             </div>
             
             {/* Kills */}
-            <div className="flex items-center gap-3 justify-end">
-              <div className="text-white font-bold text-sm uppercase tracking-wider drop-shadow-lg">
+            <div className="flex items-center gap-2 sm:gap-3 justify-end">
+              <div className="text-white font-bold text-xs sm:text-sm uppercase tracking-wider drop-shadow-lg">
                 Kills
               </div>
-              <div className="text-2xl font-bold text-red-400 drop-shadow-lg">
+              <div className="text-lg sm:text-2xl font-bold text-red-400 drop-shadow-lg">
                 {kills}
               </div>
             </div>
@@ -130,9 +130,9 @@ export default function HUD({ gameData, playerHealth = 100, maxHealth = 100, amm
         </div>
       </div>
       
-      {/* Top corners - Additional info */}
-      <div className="absolute top-4 left-4 text-white text-sm font-bold drop-shadow-lg">
-        <div className="bg-black bg-opacity-50 px-3 py-2 rounded">
+      {/* Top corners - Additional info - Responsive */}
+      <div className="absolute top-2 sm:top-4 left-2 sm:left-4 text-white text-xs sm:text-sm font-bold drop-shadow-lg">
+        <div className="bg-black bg-opacity-50 px-2 sm:px-3 py-1 sm:py-2 rounded">
           {gameData?.story?.title || 'AI Dungeon Crawler'}
         </div>
       </div>

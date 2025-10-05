@@ -71,11 +71,19 @@ export default function GameSetup({ onGenerate, setGameState }) {
   };
   
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#000' }}>
-      <div className="max-w-4xl w-full">
-        {/* ASCII Art Title */}
-        <div className="text-center mb-8">
-          <pre className="ascii-art ascii-art-animated text-sm md:text-base" style={{ fontSize: '10px', lineHeight: '0.9' }}>
+    <div className="min-h-screen p-4 pt-8 pb-24 overflow-y-auto" style={{ background: '#000' }}>
+      <div className="max-w-4xl w-full mx-auto">
+        {/* ASCII Art Title - Responsive */}
+        <div className="text-center mb-4 sm:mb-8">
+          {/* Mobile Portrait: Simple Text Logo */}
+          <div className="block sm:hidden">
+            <h1 className="text-4xl font-bold retro-glow mb-2" style={{ color: '#00ff00', fontFamily: 'monospace', letterSpacing: '0.1em' }}>
+              ROGUE<br/>ISEK AI
+            </h1>
+          </div>
+          
+          {/* Desktop/Landscape: Full ASCII Art */}
+          <pre className="hidden sm:block ascii-art ascii-art-animated text-sm md:text-base" style={{ lineHeight: '0.9' }}>
 {`
 ██████╗  ██████╗  ██████╗ ██╗   ██╗███████╗    ██╗███████╗███████╗██╗  ██╗     █████╗ ██╗
 ██╔══██╗██╔═══██╗██╔════╝ ██║   ██║██╔════╝    ██║██╔════╝██╔════╝██║ ██╔╝    ██╔══██╗██║
@@ -85,20 +93,21 @@ export default function GameSetup({ onGenerate, setGameState }) {
 ╚═╝  ╚═╝ ╚═════╝  ╚═════╝  ╚═════╝ ╚══════╝    ╚═╝╚══════╝╚══════╝╚═╝  ╚═╝    ╚═╝  ╚═╝╚═╝
 `}
           </pre>
-          <p className="text-lg retro-glow mt-4" style={{ color: '#00ff00' }}>
+          
+          <p className="text-xs sm:text-lg retro-glow mt-2 sm:mt-4 px-2" style={{ color: '#00ff00' }}>
             &gt; ENTER DUNGEON PARAMETERS FOR PROCEDURAL GENERATION
           </p>
         </div>
         
-        <form onSubmit={handleSubmit} className="mb-8">
-          <div className="retro-border p-4" style={{ background: '#0a0a0a' }}>
-            <div className="mb-2 retro-glow" style={{ color: '#00ff00' }}>&gt; INPUT_PROMPT:</div>
+        <form onSubmit={handleSubmit} className="mb-4 sm:mb-8">
+          <div className="retro-border p-3 sm:p-4" style={{ background: '#0a0a0a' }}>
+            <div className="mb-2 retro-glow text-xs sm:text-base" style={{ color: '#00ff00' }}>&gt; INPUT_PROMPT:</div>
             <input
               type="text"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               placeholder="CYBERPUNK TOWER WITH ROGUE AI..."
-              className="w-full p-3 text-lg mb-4"
+              className="w-full p-2 sm:p-3 text-sm sm:text-lg mb-3 sm:mb-4"
               style={{ background: '#000', border: '1px solid #00ff00', color: '#00ff00' }}
               disabled={isLoading}
             />
@@ -112,11 +121,11 @@ export default function GameSetup({ onGenerate, setGameState }) {
           </div>
         </form>
         
-        {/* Load Game Button */}
-        <div className="mb-8 text-center flex gap-4 justify-center">
+        {/* Load Game Button - Responsive */}
+        <div className="mb-4 sm:mb-8 text-center flex flex-col sm:flex-row gap-2 sm:gap-4 justify-center">
           <button
             onClick={() => setShowSavedGames(true)}
-            className="retro-button"
+            className="retro-button text-xs sm:text-base px-3 py-2"
             disabled={isLoading}
           >
             [LOAD SAVED GAME]
@@ -127,7 +136,7 @@ export default function GameSetup({ onGenerate, setGameState }) {
               localStorage.removeItem('playedPrompts');
               alert('Played dungeons history cleared! You can now replay all dungeons.');
             }}
-            className="retro-button"
+            className="retro-button text-xs sm:text-base px-3 py-2"
             style={{ opacity: 0.7 }}
             disabled={isLoading}
             title="Clear the list of played dungeons to replay them"
@@ -136,16 +145,17 @@ export default function GameSetup({ onGenerate, setGameState }) {
           </button>
         </div>
         
+        {/* Example Parameters - Always visible, scrollable on mobile landscape */}
         <div className="retro-panel">
-          <h2 className="text-xl font-bold mb-4 retro-glow" style={{ color: '#00ff00' }}>
+          <h2 className="text-sm sm:text-xl font-bold mb-2 sm:mb-4 retro-glow" style={{ color: '#00ff00' }}>
             &gt; EXAMPLE_PARAMETERS:
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 max-h-[40vh] sm:max-h-none overflow-y-auto">
             {examplePrompts.map((example, index) => (
               <button
                 key={index}
                 onClick={() => handleExampleClick(example)}
-                className="text-left p-3 retro-list-item"
+                className="text-left p-2 sm:p-3 retro-list-item text-xs sm:text-base hover:brightness-125 transition-all"
                 style={{ background: '#0a0a0a', border: '1px solid #00ff00', color: '#00ff00' }}
                 disabled={isLoading}
               >

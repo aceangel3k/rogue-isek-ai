@@ -99,7 +99,7 @@ button, .retro-button {
   box-shadow: 0 0 10px var(--retro-shadow);
 }
 
-button:hover, .retro-button:hover {
+button:hover:not(.retro-list-item), .retro-button:hover {
   background: var(--retro-green);
   color: var(--retro-bg);
   box-shadow: 0 0 20px var(--retro-shadow);
@@ -109,7 +109,6 @@ button:hover, .retro-button:hover {
 button:active, .retro-button:active {
   transform: scale(0.98);
 }
-
 button:disabled {
   opacity: 0.5;
   cursor: not-allowed;

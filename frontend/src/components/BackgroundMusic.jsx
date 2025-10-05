@@ -95,10 +95,10 @@ export default function BackgroundMusic({ videoId = 'DpxZ5PHa6xo' }) {
       {/* Hidden YouTube Player */}
       <div id="youtube-player" style={{ position: 'absolute', width: '0', height: '0', overflow: 'hidden' }}></div>
 
-      {/* Music Toggle Button */}
+      {/* Music Toggle Button - Bottom-right on desktop, top-left on mobile (both portrait and landscape) */}
       <button
         onClick={toggleMusic}
-        className="fixed bottom-4 right-4 retro-button px-4 py-2"
+        className="fixed top-20 left-4 md:bottom-4 md:top-auto md:left-auto md:right-4 retro-button px-3 py-2 sm:px-4 text-xs sm:text-base"
         title={isPlaying ? 'Pause Music' : 'Play Music'}
         style={{
           background: isPlaying ? '#0a0a0a' : '#000',
@@ -107,9 +107,9 @@ export default function BackgroundMusic({ videoId = 'DpxZ5PHa6xo' }) {
         }}
       >
         {isPlaying ? (
-          <span style={{ color: '#00ff00' }}>♪ [MUSIC: ON]</span>
+          <span style={{ color: '#00ff00' }}>♪ <span className="hidden sm:inline">[MUSIC: ON]</span><span className="sm:hidden">ON</span></span>
         ) : (
-          <span style={{ color: '#666' }}>♪ [MUSIC: OFF]</span>
+          <span style={{ color: '#666' }}>♪ <span className="hidden sm:inline">[MUSIC: OFF]</span><span className="sm:hidden">OFF</span></span>
         )}
       </button>
     </div>

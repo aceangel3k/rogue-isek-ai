@@ -20,7 +20,7 @@ export default function StoryIntro({ gameData, onContinue }) {
   const primaryColor = theme.primary_color || '#10b981';
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center p-4" style={{ zIndex: 10000 }}>
       <div className="max-w-3xl w-full">
         {/* Title */}
         <div className="text-center mb-8">
@@ -61,11 +61,20 @@ export default function StoryIntro({ gameData, onContinue }) {
         <div className="text-center">
           <button
             onClick={handleContinue}
-            className="px-8 py-4 retro-button font-bold text-xl"
+            className="px-6 py-3 sm:px-8 sm:py-4 retro-button font-bold text-lg sm:text-xl"
+            style={{
+              background: '#0a0a0a',
+              borderColor: '#00ff00',
+              borderWidth: '3px',
+              boxShadow: '0 0 20px rgba(0, 255, 0, 0.5), inset 0 0 10px rgba(0, 255, 0, 0.1)',
+              color: '#00ff00',
+              minHeight: '60px',
+              minWidth: '280px'
+            }}
           >
             [BEGIN ADVENTURE]
           </button>
-          <p className="text-sm mt-4" style={{ color: '#666' }}>
+          <p className="text-xs sm:text-sm mt-4" style={{ color: '#00ff00', opacity: 0.7 }}>
             &gt; PRESS ANY KEY OR CLICK TO START
           </p>
         </div>

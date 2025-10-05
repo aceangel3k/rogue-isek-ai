@@ -1,6 +1,6 @@
 export default function NoSharedDungeons({ onReturnToMenu }) {
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ background: '#000' }}>
+    <div className="fixed inset-0 flex items-center justify-center p-4" style={{ background: '#000', zIndex: 10000 }}>
       <div className="max-w-3xl w-full text-center">
         {/* ASCII Art Icon */}
         <div className="mb-8">

@@ -22,7 +22,7 @@ export default function ShopModal({ npc, items, playerGold, onPurchase, onClose,
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50" style={{ background: 'rgba(0, 0, 0, 0.95)' }}>
+    <div className="fixed inset-0 flex items-center justify-center" style={{ background: 'rgba(0, 0, 0, 0.95)', zIndex: 10000 }}>
       <div 
         className="retro-panel max-w-4xl w-full mx-4 max-h-[90vh] flex flex-col"
         style={{ padding: '20px' }}

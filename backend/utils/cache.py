@@ -46,6 +46,21 @@ def set_cached(prompt, data, cache_type='story'):
         print(f"Cache write error: {str(e)}")
         return False
 
+def get_all_cached_keys(cache_type=None):
+    """Get all cache keys, optionally filtered by type"""
+    try:
+        keys = []
+        for filename in os.listdir(CACHE_DIR):
+            if filename.endswith('.json'):
+                if cache_type is None or filename.startswith(f"{cache_type}_"):
+                    # Extract the key (remove .json extension)
+                    key = filename[:-5]
+                    keys.append(key)
+        return keys
+    except Exception as e:
+        print(f"Error getting cache keys: {str(e)}")
+        return []
+
 def clear_cache(cache_type=None):
     """Clear all cache or specific cache type"""
     try:
