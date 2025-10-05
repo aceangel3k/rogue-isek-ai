@@ -66,19 +66,22 @@ function App() {
           }
         }
         
-        // Regenerate sprites
-        if (data.sprites && data.sprites.length > 0) {
+        // Regenerate sprites (always regenerate when loading from save)
+        if (data.enemies || data.npcs) {
           try {
-            // Rebuild character list from stripped sprite metadata
+            // Rebuild character list from enemies/NPCs
+            // Use the same ID logic as backend/routes/game.py
             const characters = [];
             
             // Add enemies
             if (data.enemies) {
               data.enemies.forEach(enemy => {
+                const enemyId = enemy.id || (enemy.name || 'enemy').toLowerCase().replace(/ /g, '_');
+                console.log(`Regenerating sprite for enemy: ${enemyId}`, enemy);
                 characters.push({
-                  id: enemy.id,
+                  id: enemyId,
                   type: 'enemy',
-                  description: enemy.description || `${enemy.name} enemy`,
+                  description: enemy.description || enemy.name || 'enemy',
                   directions: 4
                 });
               });
@@ -87,28 +90,32 @@ function App() {
             // Add NPCs
             if (data.npcs) {
               data.npcs.forEach(npc => {
+                const npcId = npc.id || (npc.name || 'npc').toLowerCase().replace(/ /g, '_');
+                console.log(`Regenerating sprite for NPC: ${npcId}`, npc);
                 characters.push({
-                  id: npc.id,
+                  id: npcId,
                   type: 'npc',
-                  description: npc.description || `${npc.name} merchant`,
+                  description: `${npc.name || 'NPC'}, a ${npc.role || 'character'}`,
                   directions: 4
                 });
               });
             }
             
-            const spritesResponse = await fetch('/api/generate-sprites', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                characters: characters,
-                theme: data.theme
-              })
-            });
-            
-            if (spritesResponse.ok) {
-              const spritesData = await spritesResponse.json();
-              data.sprites = spritesData.sprites;
-              console.log('✓ Sprites regenerated from cache');
+            if (characters.length > 0) {
+              const spritesResponse = await fetch('/api/generate-sprites', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  characters: characters,
+                  theme: data.theme
+                })
+              });
+              
+              if (spritesResponse.ok) {
+                const spritesData = await spritesResponse.json();
+                data.sprites = spritesData.sprites;
+                console.log('✓ Sprites regenerated from cache:', data.sprites.length);
+              }
             }
           } catch (spriteError) {
             console.error('Failed to regenerate sprites:', spriteError);
