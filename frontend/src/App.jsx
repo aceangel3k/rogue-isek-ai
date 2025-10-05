@@ -18,8 +18,11 @@ function App() {
   const [playedDungeonIds, setPlayedDungeonIds] = useState(() => {
     try {
       const stored = localStorage.getItem('playedDungeonIds');
-      return stored ? JSON.parse(stored) : [];
-    } catch {
+      const parsed = stored ? JSON.parse(stored) : [];
+      console.log('Loaded playedDungeonIds from localStorage:', parsed);
+      return parsed;
+    } catch (e) {
+      console.error('Failed to load playedDungeonIds from localStorage:', e);
       return [];
     }
   });
