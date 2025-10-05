@@ -9,6 +9,9 @@ load_dotenv()
 # Create Flask app
 app = Flask(__name__)
 
+# Set max content length to 50MB (for game saves with some image data)
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
+
 # Enable CORS for all routes
 CORS(app)
 

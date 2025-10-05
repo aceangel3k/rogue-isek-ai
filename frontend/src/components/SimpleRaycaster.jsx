@@ -115,13 +115,23 @@ export default function SimpleRaycaster({ gameData, onPlayerMove, onLoadNextDung
       const playerId = getPlayerId();
       const prompt = sessionStorage.getItem('lastPrompt') || '';
       
+      // Strip large base64 image data to avoid 413 errors
+      // Images can be regenerated when loading the game
+      const strippedGameData = {
+        ...gameData,
+        textures: gameData.textures?.map(t => ({ id: t.id, type: t.type })) || [],
+        sprites: gameData.sprites?.map(s => ({ id: s.id, type: s.type })) || [],
+        weaponSprite: undefined, // Remove base64 weapon sprite
+        hudFrame: undefined, // Remove base64 HUD frame
+      };
+      
       const response = await fetch('/api/save-game', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           player_id: playerId,
           prompt: prompt,
-          game_data: gameData,
+          game_data: strippedGameData,
           level_number: 1, // TODO: Track actual level number in campaign
           completed: completed,
           gold: stats.gold,
