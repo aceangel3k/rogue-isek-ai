@@ -71,7 +71,7 @@ export default function GameSetup({ onGenerate, setGameState }) {
   };
   
   return (
-    <div className="min-h-screen p-4 pt-8 pb-24 overflow-y-auto" style={{ background: '#000' }}>
+    <div className="h-screen overflow-y-auto p-4 pt-8 pb-24" style={{ background: '#000' }}>
       <div className="max-w-4xl w-full mx-auto">
         {/* ASCII Art Title - Responsive */}
         <div className="text-center mb-4 sm:mb-8">
