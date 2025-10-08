@@ -4,7 +4,7 @@ import time
 
 def test_story_generation():
     """Test the story generation endpoint with a sample prompt"""
-    url = "http://localhost:5001/api/generate-game"
+    url = "http://localhost:5005/api/generate-game"
     prompt = "A haunted castle with undead knights"
     
     print(f"Testing story generation with prompt: {prompt}")

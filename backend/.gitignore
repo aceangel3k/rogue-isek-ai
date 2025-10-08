@@ -2,6 +2,7 @@ generated_textures/
 generated_sprites/
 texture_cache/
 cache/
+cache copy/
 *.db
 *.pyc
 .env

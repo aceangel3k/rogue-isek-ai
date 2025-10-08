@@ -3,7 +3,7 @@ import json
 
 # Test sprite generation endpoint
 def test_sprite_generation():
-    url = "http://127.0.0.1:5001/api/generate-sprites"
+    url = "http://127.0.0.1:5005/api/generate-sprites"
     
     # Sample data for testing
     test_data = {

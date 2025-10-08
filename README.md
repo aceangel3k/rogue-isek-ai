@@ -89,7 +89,7 @@ source venv/bin/activate
 python app.py
 ```
 
-Backend will run on `http://localhost:5001`
+Backend will run on `http://localhost:5005`
 
 **Important**: Always use `venv/bin/python` or activate the venv with `source venv/bin/activate` before running Python commands.
 
@@ -310,7 +310,7 @@ IMAGE_MODEL_FALLBACK=gpt-image-1
 Edit `frontend/src/config.js` (if needed):
 
 ```javascript
-export const API_BASE_URL = 'http://localhost:5001/api';
+export const API_BASE_URL = 'http://localhost:5/api';
 export const RENDER_WIDTH = 800;
 export const RENDER_HEIGHT = 600;
 export const FOV = 60;
@@ -380,7 +380,7 @@ pip install gunicorn
         <string>-w</string>
         <string>4</string>
         <string>-b</string>
-        <string>127.0.0.1:5001</string>
+        <string>127.0.0.1:5005</string>
         <string>app:app</string>
     </array>
     <key>WorkingDirectory</key>
@@ -416,10 +416,10 @@ npm run build
 **Backend won't start:**
 - Check API keys in `.env` file
 - Verify Python virtual environment is activated
-- Ensure port 5001 is not in use
+- Ensure port 5005 is not in use
 
 **Frontend can't connect to backend:**
-- Verify backend is running on `http://localhost:5001`
+- Verify backend is running on `http://localhost:5005`
 - Check CORS settings in `backend/app.py`
 - Clear browser cache and reload
 

@@ -27,7 +27,7 @@ def generate_game():
         # Generate textures by calling the texture endpoint
         try:
             texture_response = requests.post(
-                'http://localhost:5001/api/generate-textures',
+                'http://localhost:5005/api/generate-textures',
                 json={
                     'theme': game_data.get('theme', {}),
                     'setting': game_data.get('story', {}).get('narrative', ''),
@@ -72,7 +72,7 @@ def generate_game():
             
             if characters:
                 sprite_response = requests.post(
-                    'http://localhost:5001/api/generate-sprites',
+                    'http://localhost:5005/api/generate-sprites',
                     json={
                         'game_id': game_data['game_id'],
                         'characters': characters,
