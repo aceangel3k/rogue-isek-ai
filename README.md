@@ -310,7 +310,7 @@ IMAGE_MODEL_FALLBACK=gpt-image-1
 Edit `frontend/src/config.js` (if needed):
 
 ```javascript
-export const API_BASE_URL = 'http://localhost:5/api';
+export const API_BASE_URL = 'http://localhost:5005/api';
 export const RENDER_WIDTH = 800;
 export const RENDER_HEIGHT = 600;
 export const FOV = 60;
