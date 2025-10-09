@@ -440,24 +440,24 @@ function App() {
       console.log('✓ Injected patched story into game data');
     }
     
-    // Regenerate textures from cache
-    console.log('Regenerating images for shared world dungeon...');
-    if (data.textures && data.textures.length > 0) {
-      try {
-        const texturesResponse = await fetch('/api/generate-textures', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ theme: data.theme })
-        });
-        
-        if (texturesResponse.ok) {
-          const texturesData = await texturesResponse.json();
-          data.textures = texturesData.textures;
-          console.log('✓ Textures regenerated from cache');
-        }
-      } catch (textureError) {
-        console.error('Failed to regenerate textures:', textureError);
+    // Regenerate textures from cache (always regenerate, even if missing from saved data)
+    console.log('Regenerating textures for shared world dungeon...');
+    try {
+      const texturesResponse = await fetch('/api/generate-textures', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ theme: data.theme })
+      });
+      
+      if (texturesResponse.ok) {
+        const texturesData = await texturesResponse.json();
+        data.textures = texturesData.textures;
+        console.log(`✓ Textures regenerated from cache (${texturesData.textures?.length || 0} textures)`);
+      } else {
+        console.error('Failed to regenerate textures:', texturesResponse.status);
       }
+    } catch (textureError) {
+      console.error('Failed to regenerate textures:', textureError);
     }
     
     // Regenerate sprites from cache

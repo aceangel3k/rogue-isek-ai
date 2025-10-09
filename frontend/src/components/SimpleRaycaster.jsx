@@ -408,6 +408,7 @@ export default function SimpleRaycaster({ gameData, onPlayerMove, onLoadNextDung
       if (gameData.textures && gameData.textures.length > 0) {
         const wallTextures = gameData.textures.filter(t => t.id.startsWith('wall_'));
         const floorTexture = gameData.textures.find(t => t.id === 'floor');
+        const ceilingTexture = gameData.textures.find(t => t.id === 'ceiling');
         
         if (wallTextures.length > 0) {
           // Create wall atlas
@@ -437,6 +438,15 @@ export default function SimpleRaycaster({ gameData, onPlayerMove, onLoadNextDung
             floorTex = new THREE.CanvasTexture(canvas);
           } catch (e) {
             console.error('Floor texture load failed:', e);
+          }
+        }
+        
+        if (ceilingTexture) {
+          try {
+            const canvas = await loadTextureToCanvas(ceilingTexture.url);
+            ceilTex = new THREE.CanvasTexture(canvas);
+          } catch (e) {
+            console.error('Ceiling texture load failed:', e);
           }
         }
       }

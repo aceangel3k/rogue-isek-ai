@@ -138,15 +138,23 @@ def generate_textures():
         # Create prompt for tileable floor texture
         floor_prompt = f"Seamless tileable stone floor texture, {atmosphere} dungeon style, close-up view, no perspective, flat surface, game texture, 512x512"
         
+        # Create prompt for tileable ceiling texture
+        ceiling_prompt = f"Seamless tileable stone ceiling texture, {atmosphere} dungeon style, close-up view, no perspective, flat surface, game texture, 512x512"
+        
         # Generate all textures in parallel using ThreadPoolExecutor
         textures = []
-        all_prompts = wall_prompts + [floor_prompt]
+        all_prompts = wall_prompts + [floor_prompt, ceiling_prompt]
         
-        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
             # Submit all texture generation tasks with texture IDs
             future_to_info = {}
             for i, prompt in enumerate(all_prompts):
-                texture_id = f"wall_{i+1}" if i < 3 else "floor"
+                if i < 3:
+                    texture_id = f"wall_{i+1}"
+                elif i == 3:
+                    texture_id = "floor"
+                else:
+                    texture_id = "ceiling"
                 future = executor.submit(generate_single_texture, prompt, texture_id)
                 future_to_info[future] = (i, texture_id, prompt)
             
