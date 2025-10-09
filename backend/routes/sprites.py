@@ -293,20 +293,47 @@ def generate_single_sprite(character_data, theme, game_id=None):
     try:
         char_id = character_data.get('id', 'unknown')
         
-        # Check cache first - try with theme
+        # Try multiple cache lookup strategies (most specific to least specific)
+        
+        # 1. Try with theme (exact match)
         cache_key = f"sprite_{char_id}_{theme.get('atmosphere', 'default')}"
         cached_sprite = get_cached(cache_key, cache_type='sprite')
         if cached_sprite:
             print(f"✓ Using cached sprite for {char_id} (with theme)")
             return json.loads(cached_sprite)
         
-        # Fallback: Check cache without theme (for cross-theme reuse)
-        # This allows sprites to be reused even if themes differ slightly
+        # 2. Try without theme (theme-agnostic)
         cache_key_no_theme = f"sprite_{char_id}"
         cached_sprite = get_cached(cache_key_no_theme, cache_type='sprite')
         if cached_sprite:
             print(f"✓ Using cached sprite for {char_id} (theme-agnostic)")
             return json.loads(cached_sprite)
+        
+        # 3. Fallback: Search cache directory for any sprite with this ID
+        # This handles cases where the sprite exists but with a different theme
+        try:
+            from utils.cache import CACHE_DIR
+            import os
+            
+            if os.path.exists(CACHE_DIR):
+                for filename in os.listdir(CACHE_DIR):
+                    if filename.startswith('sprite_') and filename.endswith('.json'):
+                        filepath = os.path.join(CACHE_DIR, filename)
+                        try:
+                            with open(filepath, 'r') as f:
+                                content = f.read().strip()
+                            sprite_data = json.loads(content)
+                            if isinstance(sprite_data, str):
+                                sprite_data = json.loads(sprite_data)
+                            
+                            # Check if this sprite matches our character ID
+                            if sprite_data.get('id') == char_id:
+                                print(f"✓ Using cached sprite for {char_id} (found by ID search)")
+                                return sprite_data
+                        except:
+                            continue
+        except Exception as e:
+            print(f"Cache search failed: {e}")
         
         char_type = character_data.get('type', 'character')
         char_id = character_data.get('id', 'unknown')

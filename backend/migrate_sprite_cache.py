@@ -25,16 +25,18 @@ def get_cache_key(prompt, cache_type='story'):
     prompt_hash = hashlib.md5(prompt.lower().strip().encode()).hexdigest()
     return f"{cache_type}_{prompt_hash}.json"
 
-def migrate_sprite_cache():
+def migrate_sprite_cache(verbose=True):
     """Migrate existing sprite cache to theme-agnostic format"""
     
     if not os.path.exists(CACHE_DIR):
-        print(f"Cache directory not found: {CACHE_DIR}")
+        if verbose:
+            print(f"Cache directory not found: {CACHE_DIR}")
         return
     
-    print("="*60)
-    print("Migrating sprite cache to theme-agnostic format...")
-    print("="*60)
+    if verbose:
+        print("="*60)
+        print("Migrating sprite cache to theme-agnostic format...")
+        print("="*60)
     
     sprite_files = [f for f in os.listdir(CACHE_DIR) if f.startswith('sprite_') and f.endswith('.json')]
     
@@ -87,25 +89,32 @@ def migrate_sprite_cache():
             with open(theme_agnostic_path, 'w') as f:
                 json.dump(json.dumps(sprite_data), f, indent=2)
             
-            print(f"  ✓ Migrated: {char_id}")
+            if verbose:
+                print(f"  ✓ Migrated: {char_id}")
             migrated += 1
             
         except Exception as e:
-            print(f"  ✗ Error processing {filename}: {e}")
+            if verbose:
+                print(f"  ✗ Error processing {filename}: {e}")
             errors += 1
     
-    print("="*60)
-    print(f"Migration complete!")
-    print(f"  Migrated: {migrated}")
-    print(f"  Skipped: {skipped}")
-    print(f"  Errors: {errors}")
-    print("="*60)
-    
-    if migrated > 0:
-        print("\n✓ Existing sprites can now be reused across themes!")
-        print("✓ No LLM regeneration needed for migrated sprites.")
-    elif skipped > 0:
-        print("\n✓ All sprites already have theme-agnostic versions!")
+    if verbose:
+        print("="*60)
+        print(f"Migration complete!")
+        print(f"  Migrated: {migrated}")
+        print(f"  Skipped: {skipped}")
+        print(f"  Errors: {errors}")
+        print("="*60)
+        
+        if migrated > 0:
+            print("\n✓ Existing sprites can now be reused across themes!")
+            print("✓ No LLM regeneration needed for migrated sprites.")
+        elif skipped > 0:
+            print("\n✓ All sprites already have theme-agnostic versions!")
+    else:
+        # Silent mode - just log summary
+        if migrated > 0:
+            print(f"✓ Sprite cache migration: {migrated} migrated, {skipped} skipped, {errors} errors")
 
 if __name__ == '__main__':
     migrate_sprite_cache()
