@@ -17,6 +17,17 @@ function App() {
   // Track accumulated enemies from previous levels for progressive difficulty
   const [accumulatedEnemies, setAccumulatedEnemies] = useState([]);
   
+  // Progressive difficulty toggle (default: enabled)
+  const [progressiveDifficulty, setProgressiveDifficulty] = useState(() => {
+    const saved = localStorage.getItem('progressiveDifficulty');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+  
+  // Persist progressive difficulty setting
+  useEffect(() => {
+    localStorage.setItem('progressiveDifficulty', JSON.stringify(progressiveDifficulty));
+  }, [progressiveDifficulty]);
+  
   // Add/remove game-active class to body based on game state
   useEffect(() => {
     if (gameState === 'playing') {
@@ -366,12 +377,31 @@ function App() {
         }
       }
       
-      // Merge accumulated enemies with new dungeon enemies for progressive difficulty
-      const mergedEnemies = [...accumulatedEnemies, ...(nextDungeon.game_data.enemies || [])];
-      console.log(`Progressive Difficulty: Merging ${accumulatedEnemies.length} previous enemies + ${nextDungeon.game_data.enemies?.length || 0} new enemies = ${mergedEnemies.length} total`);
+      // Progressive Difficulty: Merge dungeon's original enemies + accumulated enemies (if enabled)
+      const dungeonEnemies = nextDungeon.game_data.enemies || [];
       
-      // Update the next dungeon data with merged enemies
-      nextDungeon.game_data.enemies = mergedEnemies;
+      if (progressiveDifficulty && accumulatedEnemies.length > 0) {
+        // PROGRESSIVE MODE: Merge accumulated + dungeon enemies
+        // PRIORITY: Dungeon's original enemies come first and take precedence
+        
+        // Create a Set of dungeon enemy IDs to avoid duplicates
+        const dungeonEnemyIds = new Set(dungeonEnemies.map(e => e.id));
+        
+        // Add accumulated enemies that aren't already in the dungeon
+        const uniqueAccumulatedEnemies = accumulatedEnemies.filter(e => !dungeonEnemyIds.has(e.id));
+        
+        // Merge: dungeon's enemies FIRST (priority), then unique accumulated enemies
+        const mergedEnemies = [...dungeonEnemies, ...uniqueAccumulatedEnemies];
+        
+        console.log(`Progressive Difficulty ON: ${dungeonEnemies.length} dungeon enemies (priority) + ${uniqueAccumulatedEnemies.length} unique accumulated = ${mergedEnemies.length} total`);
+        
+        // Update the next dungeon data with merged enemies
+        nextDungeon.game_data.enemies = mergedEnemies;
+      } else {
+        // ORIGINAL MODE: Use only dungeon's original enemies
+        console.log(`Progressive Difficulty OFF: Using ${dungeonEnemies.length} original dungeon enemies only`);
+        // nextDungeon.game_data.enemies already has the original enemies, no change needed
+      }
       
       // Set transition data
       setTransitionData({
@@ -523,7 +553,14 @@ function App() {
 
   return (
     <div className="text-white h-screen w-screen overflow-hidden">
-      {gameState === 'setup' && <GameSetup onGenerate={generateGame} setGameState={setGameState} />}
+      {gameState === 'setup' && (
+        <GameSetup 
+          onGenerate={generateGame} 
+          setGameState={setGameState}
+          progressiveDifficulty={progressiveDifficulty}
+          setProgressiveDifficulty={setProgressiveDifficulty}
+        />
+      )}
       {gameState === 'loading' && <LoadingScreen />}
       {gameState === 'playing' && (
         <>

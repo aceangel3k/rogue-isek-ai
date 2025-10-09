@@ -14,7 +14,7 @@ const examplePrompts = [
   "A frozen wasteland with ice demons"
 ];
 
-export default function GameSetup({ onGenerate, setGameState }) {
+export default function GameSetup({ onGenerate, setGameState, progressiveDifficulty, setProgressiveDifficulty }) {
   const [prompt, setPrompt] = useState(() => {
     // Load saved prompt from sessionStorage
     return sessionStorage.getItem('lastPrompt') || '';
@@ -118,6 +118,32 @@ export default function GameSetup({ onGenerate, setGameState }) {
             >
               {isLoading ? '[GENERATING...]' : '[EXECUTE GENERATION]'}
             </button>
+            
+            {/* Progressive Difficulty Toggle */}
+            <div className="mt-4 pt-4 border-t" style={{ borderColor: '#00ff00', borderOpacity: 0.3 }}>
+              <button
+                type="button"
+                onClick={() => setProgressiveDifficulty(!progressiveDifficulty)}
+                className="w-full text-left p-2 hover:bg-green-500/10 transition-colors"
+                style={{ border: '1px solid #00ff00' }}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="retro-glow text-xs sm:text-sm mb-1" style={{ color: '#00ff00' }}>
+                      &gt; PROGRESSIVE_DIFFICULTY: [{progressiveDifficulty ? 'ON' : 'OFF'}]
+                    </div>
+                    <div className="text-xs opacity-70 font-mono" style={{ color: '#00ff00' }}>
+                      {progressiveDifficulty 
+                        ? '// Accumulate enemies from previous levels' 
+                        : '// Each level uses only original enemies'}
+                    </div>
+                  </div>
+                  <div className="ml-4 font-mono text-lg retro-glow" style={{ color: '#00ff00' }}>
+                    {progressiveDifficulty ? '[X]' : '[ ]'}
+                  </div>
+                </div>
+              </button>
+            </div>
           </div>
         </form>
         
