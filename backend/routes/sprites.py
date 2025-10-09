@@ -62,7 +62,7 @@ def save_sprite_to_disk(sprite_data, game_id):
 def remove_solid_background(base64_image, tolerance=30):
     """
     Remove solid color backgrounds from sprites and make them transparent.
-    Detects the most common background color (usually corners) and removes it.
+    Uses flood fill from edges to only remove background, preserving sprite details.
     """
     try:
         # Decode base64 to image
@@ -80,6 +80,7 @@ def remove_solid_background(base64_image, tolerance=30):
         
         # Get image data as numpy array
         data = np.array(img)
+        height, width = data.shape[:2]
         
         # Check if image already has transparency
         # If more than 5% of pixels are already transparent, skip processing
@@ -93,7 +94,6 @@ def remove_solid_background(base64_image, tolerance=30):
             return base64_image
         
         # Sample corner pixels to determine background color
-        # Check all four corners and take the most common color
         corners = [
             data[0, 0],  # Top-left
             data[0, -1],  # Top-right
@@ -104,19 +104,59 @@ def remove_solid_background(base64_image, tolerance=30):
         # Use the first corner as background color (most common case)
         bg_color = corners[0][:3]  # RGB only
         
-        # Create mask for pixels similar to background color
-        r, g, b, a = data[:, :, 0], data[:, :, 1], data[:, :, 2], data[:, :, 3]
+        # Create a mask for background pixels (starts as False)
+        bg_mask = np.zeros((height, width), dtype=bool)
         
-        # Calculate color distance from background
-        color_diff = np.sqrt(
-            (r.astype(int) - int(bg_color[0])) ** 2 +
-            (g.astype(int) - int(bg_color[1])) ** 2 +
-            (b.astype(int) - int(bg_color[2])) ** 2
-        )
+        # Flood fill from all edges to find connected background pixels
+        def is_background_color(pixel_rgb):
+            """Check if pixel color is close to background color"""
+            color_diff = np.sqrt(
+                (int(pixel_rgb[0]) - int(bg_color[0])) ** 2 +
+                (int(pixel_rgb[1]) - int(bg_color[1])) ** 2 +
+                (int(pixel_rgb[2]) - int(bg_color[2])) ** 2
+            )
+            return color_diff <= tolerance
         
-        # Make pixels transparent if they're close to background color
-        mask = color_diff <= tolerance
-        data[mask, 3] = 0  # Set alpha to 0 (transparent)
+        # Simple flood fill from edges (4-directional)
+        visited = np.zeros((height, width), dtype=bool)
+        stack = []
+        
+        # Add all edge pixels that match background color
+        # Top and bottom edges
+        for x in range(width):
+            if is_background_color(data[0, x, :3]):
+                stack.append((0, x))
+            if is_background_color(data[height-1, x, :3]):
+                stack.append((height-1, x))
+        
+        # Left and right edges
+        for y in range(height):
+            if is_background_color(data[y, 0, :3]):
+                stack.append((y, 0))
+            if is_background_color(data[y, width-1, :3]):
+                stack.append((y, width-1))
+        
+        # Flood fill
+        while stack:
+            y, x = stack.pop()
+            
+            if visited[y, x]:
+                continue
+            
+            if not is_background_color(data[y, x, :3]):
+                continue
+            
+            visited[y, x] = True
+            bg_mask[y, x] = True
+            
+            # Check 4 neighbors
+            for dy, dx in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                ny, nx = y + dy, x + dx
+                if 0 <= ny < height and 0 <= nx < width and not visited[ny, nx]:
+                    stack.append((ny, nx))
+        
+        # Apply mask - only make background pixels transparent
+        data[bg_mask, 3] = 0  # Set alpha to 0 for background only
         
         # Create new image with transparency
         result_img = Image.fromarray(data, 'RGBA')
@@ -251,11 +291,21 @@ def download_image_as_base64(image_url):
 def generate_single_sprite(character_data, theme, game_id=None):
     """Generate a single character sprite sheet using Gemini (primary) with gpt-image-1 fallback"""
     try:
-        # Check cache first
-        cache_key = f"sprite_{character_data.get('id', 'unknown')}_{theme.get('atmosphere', 'default')}"
+        char_id = character_data.get('id', 'unknown')
+        
+        # Check cache first - try with theme
+        cache_key = f"sprite_{char_id}_{theme.get('atmosphere', 'default')}"
         cached_sprite = get_cached(cache_key, cache_type='sprite')
         if cached_sprite:
-            print(f"Using cached sprite for {character_data.get('id')}")
+            print(f"✓ Using cached sprite for {char_id} (with theme)")
+            return json.loads(cached_sprite)
+        
+        # Fallback: Check cache without theme (for cross-theme reuse)
+        # This allows sprites to be reused even if themes differ slightly
+        cache_key_no_theme = f"sprite_{char_id}"
+        cached_sprite = get_cached(cache_key_no_theme, cache_type='sprite')
+        if cached_sprite:
+            print(f"✓ Using cached sprite for {char_id} (theme-agnostic)")
             return json.loads(cached_sprite)
         
         char_type = character_data.get('type', 'character')
@@ -366,8 +416,13 @@ Clear icon-like design, centered, retro game aesthetic."""
             "frame_count": directions
         }
         
-        # Cache the result
+        # Cache the result with theme
         set_cached(cache_key, json.dumps(result), cache_type='sprite')
+        
+        # Also cache without theme for cross-theme reuse (cost optimization)
+        cache_key_no_theme = f"sprite_{char_id}"
+        set_cached(cache_key_no_theme, json.dumps(result), cache_type='sprite')
+        print(f"✓ Cached sprite for {char_id} (both with and without theme)")
         
         # Save to disk if game_id provided
         if game_id:

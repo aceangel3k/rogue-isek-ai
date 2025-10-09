@@ -62,11 +62,19 @@ def save_game_state():
             )
             
             # Save to shared dungeons pool
+            # Strip large binary data (sprites, textures) to reduce database size
+            # These will be regenerated from cache when loaded
+            game_data_stripped = game_data.copy()
+            game_data_stripped.pop('sprites', None)
+            game_data_stripped.pop('textures', None)
+            game_data_stripped.pop('weaponSprite', None)
+            game_data_stripped.pop('hudFrame', None)
+            
             save_shared_dungeon(
                 dungeon_id=dungeon_id,
                 player_id=player_id,
                 prompt=prompt,
-                game_data=game_data,
+                game_data=game_data_stripped,
                 difficulty=level_number
             )
         

@@ -14,6 +14,9 @@ function App() {
   const [playerPos, setPlayerPos] = useState({ x: 8, y: 8 });
   const [transitionData, setTransitionData] = useState(null);
   
+  // Track accumulated enemies from previous levels for progressive difficulty
+  const [accumulatedEnemies, setAccumulatedEnemies] = useState([]);
+  
   // Add/remove game-active class to body based on game state
   useEffect(() => {
     if (gameState === 'playing') {
@@ -56,6 +59,12 @@ function App() {
   const generateGame = async (prompt, savedGameData = null) => {
     try {
       setGameState('loading');
+      
+      // Reset accumulated enemies when starting a new campaign (not loading from save)
+      if (!savedGameData) {
+        console.log('Starting new campaign - resetting accumulated enemies');
+        setAccumulatedEnemies([]);
+      }
       
       console.log('generateGame called with savedGameData:', !!savedGameData);
       if (savedGameData) {
@@ -323,6 +332,15 @@ function App() {
         return updated;
       });
       
+      // Add current dungeon's enemies to accumulated list for progressive difficulty
+      if (gameData?.enemies && gameData.enemies.length > 0) {
+        setAccumulatedEnemies(prev => {
+          const newEnemies = [...prev, ...gameData.enemies];
+          console.log(`Progressive Difficulty: Added ${gameData.enemies.length} enemy types. Total accumulated: ${newEnemies.length}`);
+          return newEnemies;
+        });
+      }
+      
       // Generate story patch
       const patchResponse = await fetch('/api/patch-story', {
         method: 'POST',
@@ -347,6 +365,13 @@ function App() {
           storyPatch = patchData.story_patch;
         }
       }
+      
+      // Merge accumulated enemies with new dungeon enemies for progressive difficulty
+      const mergedEnemies = [...accumulatedEnemies, ...(nextDungeon.game_data.enemies || [])];
+      console.log(`Progressive Difficulty: Merging ${accumulatedEnemies.length} previous enemies + ${nextDungeon.game_data.enemies?.length || 0} new enemies = ${mergedEnemies.length} total`);
+      
+      // Update the next dungeon data with merged enemies
+      nextDungeon.game_data.enemies = mergedEnemies;
       
       // Set transition data
       setTransitionData({
@@ -410,8 +435,9 @@ function App() {
       try {
         const characters = [];
         
-        // Add enemies
+        // Add enemies (includes accumulated enemies from previous levels)
         if (data.enemies) {
+          console.log(`Progressive Difficulty: Regenerating sprites for ${data.enemies.length} total enemy types (accumulated from previous levels)`);
           data.enemies.forEach(enemy => {
             const enemyId = enemy.id || (enemy.name || 'enemy').toLowerCase().replace(/ /g, '_');
             console.log(`Regenerating sprite for enemy: ${enemyId}`, enemy);
