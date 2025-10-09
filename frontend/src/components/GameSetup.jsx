@@ -124,8 +124,11 @@ export default function GameSetup({ onGenerate, setGameState, progressiveDifficu
               <button
                 type="button"
                 onClick={() => setProgressiveDifficulty(!progressiveDifficulty)}
-                className="w-full text-left p-2 hover:bg-green-500/10 transition-colors"
-                style={{ border: '1px solid #00ff00' }}
+                className="w-full text-left p-2 hover:brightness-125 transition-all"
+                style={{ 
+                  border: '1px solid #00ff00',
+                  background: '#0a0a0a'
+                }}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
