@@ -116,15 +116,33 @@ def generate_textures():
         data = request.get_json()
         theme = data.get('theme', {})
         game_id = data.get('game_id', 'default')
+        force_new = data.get('force_new', False)  # Option to force new generation
         
-        # Create cache key from theme
+        # Create cache key from theme AND game_id to ensure unique textures per prompt
         atmosphere = theme.get('atmosphere', 'dark')
-        cache_key = f"{atmosphere}_textures"
         
-        # Check cache first
-        cached_textures = get_cached(cache_key, cache_type='textures')
-        if cached_textures:
-            return jsonify({"textures": cached_textures, "game_id": game_id})
+        # Check cache first (unless force_new is True)
+        if not force_new:
+            # Try game_id-specific cache first
+            if game_id and game_id != 'default':
+                cache_key = f"{game_id}_{atmosphere}_textures"
+                cached_textures = get_cached(cache_key, cache_type='textures')
+                if cached_textures:
+                    print(f"Using cached textures for game_id: {game_id}")
+                    return jsonify({"textures": cached_textures, "game_id": game_id})
+            
+            # Fallback: Try theme-only cache (for backward compatibility)
+            fallback_cache_key = f"{atmosphere}_textures"
+            cached_textures = get_cached(fallback_cache_key, cache_type='textures')
+            if cached_textures:
+                print(f"Using cached textures (theme-only fallback): {atmosphere}")
+                return jsonify({"textures": cached_textures, "game_id": game_id})
+        
+        # Set cache key for saving (prefer game_id-specific if available)
+        if game_id and game_id != 'default':
+            cache_key = f"{game_id}_{atmosphere}_textures"
+        else:
+            cache_key = f"{atmosphere}_textures"
         
         # Create prompts for tileable wall textures
         # Key: Use "seamless tileable texture" and focus on material, not scenes
@@ -174,8 +192,9 @@ def generate_textures():
         # Sort textures to ensure consistent order
         textures.sort(key=lambda x: x['id'])
         
-        # Cache the textures
+        # Cache the textures with game_id-specific key
         set_cached(cache_key, textures, cache_type='textures')
+        print(f"✓ Cached textures for game_id: {game_id}")
         
         return jsonify({"textures": textures, "game_id": game_id})
     except Exception as e:

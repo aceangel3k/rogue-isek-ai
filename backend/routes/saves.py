@@ -70,6 +70,10 @@ def save_game_state():
             game_data_stripped.pop('weaponSprite', None)
             game_data_stripped.pop('hudFrame', None)
             
+            # Ensure game_id is preserved for asset caching
+            if 'game_id' not in game_data_stripped:
+                game_data_stripped['game_id'] = dungeon_id
+            
             save_shared_dungeon(
                 dungeon_id=dungeon_id,
                 player_id=player_id,

@@ -288,52 +288,43 @@ def download_image_as_base64(image_url):
         error_b64 = base64.b64encode(error_message.encode('utf-8')).decode('utf-8')
         return f"data:text/plain;base64,{error_b64}"
 
-def generate_single_sprite(character_data, theme, game_id=None):
+def generate_single_sprite(character_data, theme, game_id=None, force_new=False):
     """Generate a single character sprite sheet using Gemini (primary) with gpt-image-1 fallback"""
     try:
         char_id = character_data.get('id', 'unknown')
+        atmosphere = theme.get('atmosphere', 'default')
         
-        # Try multiple cache lookup strategies (most specific to least specific)
+        # Use character-specific game_id if provided (for accumulated enemies)
+        # Otherwise use the global game_id (for current dungeon enemies)
+        effective_game_id = character_data.get('_originalGameId') or game_id
         
-        # 1. Try with theme (exact match)
-        cache_key = f"sprite_{char_id}_{theme.get('atmosphere', 'default')}"
-        cached_sprite = get_cached(cache_key, cache_type='sprite')
-        if cached_sprite:
-            print(f"✓ Using cached sprite for {char_id} (with theme)")
-            return json.loads(cached_sprite)
-        
-        # 2. Try without theme (theme-agnostic)
-        cache_key_no_theme = f"sprite_{char_id}"
-        cached_sprite = get_cached(cache_key_no_theme, cache_type='sprite')
-        if cached_sprite:
-            print(f"✓ Using cached sprite for {char_id} (theme-agnostic)")
-            return json.loads(cached_sprite)
-        
-        # 3. Fallback: Search cache directory for any sprite with this ID
-        # This handles cases where the sprite exists but with a different theme
-        try:
-            from utils.cache import CACHE_DIR
-            import os
+        # If force_new is False, check cache
+        if not force_new:
+            # 1. Try game_id-specific cache first (for new prompt-specific assets)
+            if effective_game_id and effective_game_id != 'default':
+                cache_key = f"sprite_{effective_game_id}_{char_id}_{atmosphere}"
+                cached_sprite = get_cached(cache_key, cache_type='sprite')
+                if cached_sprite:
+                    print(f"✓ Using cached sprite for {char_id} (game_id: {effective_game_id})")
+                    return json.loads(cached_sprite)
             
-            if os.path.exists(CACHE_DIR):
-                for filename in os.listdir(CACHE_DIR):
-                    if filename.startswith('sprite_') and filename.endswith('.json'):
-                        filepath = os.path.join(CACHE_DIR, filename)
-                        try:
-                            with open(filepath, 'r') as f:
-                                content = f.read().strip()
-                            sprite_data = json.loads(content)
-                            if isinstance(sprite_data, str):
-                                sprite_data = json.loads(sprite_data)
-                            
-                            # Check if this sprite matches our character ID
-                            if sprite_data.get('id') == char_id:
-                                print(f"✓ Using cached sprite for {char_id} (found by ID search)")
-                                return sprite_data
-                        except:
-                            continue
-        except Exception as e:
-            print(f"Cache search failed: {e}")
+            # 2. Fallback: Try theme-only cache (for accumulated enemies from previous levels)
+            fallback_cache_key = f"sprite_{char_id}_{atmosphere}"
+            cached_sprite = get_cached(fallback_cache_key, cache_type='sprite')
+            if cached_sprite:
+                print(f"✓ Using cached sprite for {char_id} (theme fallback)")
+                return json.loads(cached_sprite)
+            
+            # 3. Fallback: Try theme-agnostic cache
+            theme_agnostic_key = f"sprite_{char_id}"
+            cached_sprite = get_cached(theme_agnostic_key, cache_type='sprite')
+            if cached_sprite:
+                print(f"✓ Using cached sprite for {char_id} (theme-agnostic fallback)")
+                return json.loads(cached_sprite)
+        
+        # If force_new is True, skip all cache lookups and generate fresh
+        if force_new:
+            print(f"Force generating new sprite for {char_id} (skipping cache)")
         
         char_type = character_data.get('type', 'character')
         char_id = character_data.get('id', 'unknown')
@@ -443,13 +434,17 @@ Clear icon-like design, centered, retro game aesthetic."""
             "frame_count": directions
         }
         
-        # Cache the result with theme
-        set_cached(cache_key, json.dumps(result), cache_type='sprite')
+        # Cache the result with multiple keys for flexibility
+        if effective_game_id and effective_game_id != 'default':
+            # Primary cache: game_id-specific (for new prompts)
+            cache_key = f"sprite_{effective_game_id}_{char_id}_{atmosphere}"
+            set_cached(cache_key, json.dumps(result), cache_type='sprite')
+            print(f"✓ Cached sprite for {char_id} (game_id: {effective_game_id})")
         
-        # Also cache without theme for cross-theme reuse (cost optimization)
-        cache_key_no_theme = f"sprite_{char_id}"
-        set_cached(cache_key_no_theme, json.dumps(result), cache_type='sprite')
-        print(f"✓ Cached sprite for {char_id} (both with and without theme)")
+        # Also cache with theme-only key (for progressive difficulty reuse)
+        fallback_cache_key = f"sprite_{char_id}_{atmosphere}"
+        set_cached(fallback_cache_key, json.dumps(result), cache_type='sprite')
+        print(f"✓ Cached sprite for {char_id} (theme fallback)")
         
         # Save to disk if game_id provided
         if game_id:
@@ -470,15 +465,27 @@ Clear icon-like design, centered, retro game aesthetic."""
             "error": error_message
         }
 
-def generate_weapon_sprite(weapon_name, theme):
+def generate_weapon_sprite(weapon_name, theme, game_id=None, force_new=False):
     """Generate a first-person weapon sprite (Wolfenstein style)"""
     try:
-        # Check cache first
-        cache_key = f"weapon_{weapon_name}_{theme.get('atmosphere', 'default')}"
-        cached_weapon = get_cached(cache_key, cache_type='sprite')
-        if cached_weapon:
-            print(f"Using cached weapon sprite for {weapon_name}")
-            return json.loads(cached_weapon)
+        atmosphere = theme.get('atmosphere', 'default')
+        
+        # Check cache first (unless force_new is True)
+        if not force_new:
+            # Try game_id-specific cache first
+            if game_id and game_id != 'default':
+                cache_key = f"weapon_{game_id}_{weapon_name}_{atmosphere}"
+                cached_weapon = get_cached(cache_key, cache_type='sprite')
+                if cached_weapon:
+                    print(f"Using cached weapon sprite for {weapon_name} (game_id: {game_id})")
+                    return json.loads(cached_weapon)
+            
+            # Fallback: theme-only cache
+            fallback_cache_key = f"weapon_{weapon_name}_{atmosphere}"
+            cached_weapon = get_cached(fallback_cache_key, cache_type='sprite')
+            if cached_weapon:
+                print(f"Using cached weapon sprite for {weapon_name} (theme fallback)")
+                return json.loads(cached_weapon)
         
         # Create prompt for weapon sprite
         prompt = f"""First-person view pixel art weapon sprite: {weapon_name}
@@ -564,8 +571,14 @@ ONLY the weapon and hands from first-person view."""
             }
         }
         
-        # Cache the result
-        set_cached(cache_key, json.dumps(result), cache_type='sprite')
+        # Cache with multiple keys for flexibility
+        if game_id and game_id != 'default':
+            cache_key = f"weapon_{game_id}_{weapon_name}_{atmosphere}"
+            set_cached(cache_key, json.dumps(result), cache_type='sprite')
+        
+        # Also cache with theme-only key (for reuse across dungeons)
+        fallback_cache_key = f"weapon_{weapon_name}_{atmosphere}"
+        set_cached(fallback_cache_key, json.dumps(result), cache_type='sprite')
         
         return result
         
@@ -584,6 +597,7 @@ def generate_sprites():
         game_id = data.get('game_id', 'default')
         characters = data.get('characters', [])
         theme = data.get('theme', {})
+        force_new = data.get('force_new', False)  # Option to force new generation
         
         if not characters:
             return jsonify({"error": "No characters specified"}), 400
@@ -593,7 +607,7 @@ def generate_sprites():
         with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
             # Submit all sprite generation tasks
             future_to_char = {
-                executor.submit(generate_single_sprite, char, theme, game_id): char 
+                executor.submit(generate_single_sprite, char, theme, game_id, force_new): char 
                 for char in characters
             }
             
@@ -633,8 +647,10 @@ def generate_weapon():
         data = request.get_json()
         weapon_name = data.get('weapon', 'pistol')
         theme = data.get('theme', {})
+        game_id = data.get('game_id', None)
+        force_new = data.get('force_new', False)
         
-        weapon_sprite = generate_weapon_sprite(weapon_name, theme)
+        weapon_sprite = generate_weapon_sprite(weapon_name, theme, game_id, force_new)
         
         return jsonify({
             "weapon": weapon_sprite,
@@ -644,15 +660,27 @@ def generate_weapon():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-def generate_hud_frame(theme):
+def generate_hud_frame(theme, game_id=None, force_new=False):
     """Generate a HUD frame texture"""
     try:
-        # Check cache first
-        cache_key = f"hud_frame_{theme.get('atmosphere', 'default')}"
-        cached_hud = get_cached(cache_key, cache_type='sprite')
-        if cached_hud:
-            print("Using cached HUD frame")
-            return json.loads(cached_hud)
+        atmosphere = theme.get('atmosphere', 'default')
+        
+        # Check cache first (unless force_new is True)
+        if not force_new:
+            # Try game_id-specific cache first
+            if game_id and game_id != 'default':
+                cache_key = f"hud_frame_{game_id}_{atmosphere}"
+                cached_hud = get_cached(cache_key, cache_type='sprite')
+                if cached_hud:
+                    print(f"Using cached HUD frame (game_id: {game_id})")
+                    return json.loads(cached_hud)
+            
+            # Fallback: theme-only cache
+            fallback_cache_key = f"hud_frame_{atmosphere}"
+            cached_hud = get_cached(fallback_cache_key, cache_type='sprite')
+            if cached_hud:
+                print(f"Using cached HUD frame (theme fallback)")
+                return json.loads(cached_hud)
         
         # Create prompt for HUD frame
         prompt = f"""Decorative border/frame overlay for a retro FPS game HUD:
@@ -751,8 +779,14 @@ ONLY decorative frame/border artwork that leaves space for overlaid UI."""
             }
         }
         
-        # Cache the result
-        set_cached(cache_key, json.dumps(result), cache_type='sprite')
+        # Cache with multiple keys for flexibility
+        if game_id and game_id != 'default':
+            cache_key = f"hud_frame_{game_id}_{atmosphere}"
+            set_cached(cache_key, json.dumps(result), cache_type='sprite')
+        
+        # Also cache with theme-only key (for reuse across dungeons)
+        fallback_cache_key = f"hud_frame_{atmosphere}"
+        set_cached(fallback_cache_key, json.dumps(result), cache_type='sprite')
         
         return result
         
@@ -765,8 +799,10 @@ def generate_hud():
     try:
         data = request.get_json()
         theme = data.get('theme', {})
+        game_id = data.get('game_id', None)
+        force_new = data.get('force_new', False)
         
-        hud_data = generate_hud_frame(theme)
+        hud_data = generate_hud_frame(theme, game_id, force_new)
         
         return jsonify({
             "hud": hud_data,

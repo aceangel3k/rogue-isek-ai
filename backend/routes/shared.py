@@ -40,6 +40,14 @@ def get_next_dungeon():
         # Parse game_data JSON
         dungeon['game_data'] = json.loads(dungeon['game_data'])
         
+        # Ensure game_id is set to dungeon_id for asset caching
+        # This ensures all players see the original creator's assets
+        if 'game_id' not in dungeon['game_data']:
+            dungeon['game_data']['game_id'] = dungeon['dungeon_id']
+        
+        # Also set dungeon_id for reference
+        dungeon['game_data']['dungeon_id'] = dungeon['dungeon_id']
+        
         # Increment play count
         from database import get_connection
         conn = get_connection()

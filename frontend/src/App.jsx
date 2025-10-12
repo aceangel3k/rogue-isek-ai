@@ -346,7 +346,13 @@ function App() {
       // Add current dungeon's enemies to accumulated list for progressive difficulty
       if (gameData?.enemies && gameData.enemies.length > 0) {
         setAccumulatedEnemies(prev => {
-          const newEnemies = [...prev, ...gameData.enemies];
+          // Tag each enemy with its original game_id for sprite caching
+          const currentGameId = gameData.game_id || gameData.dungeon_id;
+          const taggedEnemies = gameData.enemies.map(enemy => ({
+            ...enemy,
+            _originalGameId: enemy._originalGameId || currentGameId  // Preserve if already tagged
+          }));
+          const newEnemies = [...prev, ...taggedEnemies];
           console.log(`Progressive Difficulty: Added ${gameData.enemies.length} enemy types. Total accumulated: ${newEnemies.length}`);
           return newEnemies;
         });
@@ -440,13 +446,18 @@ function App() {
       console.log('✓ Injected patched story into game data');
     }
     
-    // Regenerate textures from cache (always regenerate, even if missing from saved data)
-    console.log('Regenerating textures for shared world dungeon...');
+    // Regenerate textures from cache using the original dungeon's game_id
+    // This ensures we use the original creator's assets
+    const originalGameId = data.game_id || data.dungeon_id;
+    console.log(`Regenerating textures for shared dungeon (game_id: ${originalGameId})...`);
     try {
       const texturesResponse = await fetch('/api/generate-textures', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ theme: data.theme })
+        body: JSON.stringify({ 
+          theme: data.theme,
+          game_id: originalGameId  // Use original creator's game_id
+        })
       });
       
       if (texturesResponse.ok) {
@@ -470,12 +481,16 @@ function App() {
           console.log(`Progressive Difficulty: Regenerating sprites for ${data.enemies.length} total enemy types (accumulated from previous levels)`);
           data.enemies.forEach(enemy => {
             const enemyId = enemy.id || (enemy.name || 'enemy').toLowerCase().replace(/ /g, '_');
-            console.log(`Regenerating sprite for enemy: ${enemyId}`, enemy);
+            // Use enemy's original game_id if available (for accumulated enemies)
+            // Otherwise use current dungeon's game_id (for new enemies)
+            const enemyGameId = enemy._originalGameId || originalGameId;
+            console.log(`Regenerating sprite for enemy: ${enemyId} (game_id: ${enemyGameId})`);
             characters.push({
               id: enemyId,
               type: 'enemy',
               description: enemy.description || enemy.name || 'enemy',
-              directions: 4
+              directions: 4,
+              _originalGameId: enemyGameId  // Pass to backend for per-sprite caching
             });
           });
         }
@@ -500,7 +515,8 @@ function App() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               characters: characters,
-              theme: data.theme
+              theme: data.theme,
+              game_id: originalGameId  // Use original creator's game_id for sprites
             })
           });
           
@@ -521,7 +537,10 @@ function App() {
       const hudResponse = await fetch('/api/generate-hud', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ theme: data.theme })
+        body: JSON.stringify({ 
+          theme: data.theme,
+          game_id: originalGameId  // Use original creator's game_id for HUD
+        })
       });
       
       const hudData = await hudResponse.json();
@@ -536,7 +555,11 @@ function App() {
       const weaponResponse = await fetch('/api/generate-weapon', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ weapon: 'pistol', theme: data.theme })
+        body: JSON.stringify({ 
+          weapon: 'pistol', 
+          theme: data.theme,
+          game_id: originalGameId  // Use original creator's game_id for weapon
+        })
       });
       
       const weaponData = await weaponResponse.json();
