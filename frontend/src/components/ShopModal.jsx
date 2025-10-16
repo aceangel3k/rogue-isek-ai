@@ -1,10 +1,22 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DialogueBox from './DialogueBox';
 
 export default function ShopModal({ npc, items, playerGold, onPurchase, onClose, gameData }) {
   const [selectedItem, setSelectedItem] = useState(null);
   const [purchaseMessage, setPurchaseMessage] = useState('');
   const [showDialogue, setShowDialogue] = useState(false);
+  const [dialogueMessages, setDialogueMessages] = useState([]);
+  
+  // Initialize dialogue messages once when modal opens
+  useEffect(() => {
+    if (dialogueMessages.length === 0) {
+      setDialogueMessages([{
+        role: 'assistant',
+        content: npc?.greeting || "Greetings, traveler. How may I assist you?",
+        timestamp: Date.now()
+      }]);
+    }
+  }, [npc, dialogueMessages.length]);
   
   // Extract theme colors with fallbacks
   const primaryColor = gameData?.theme?.primary_color || '#00ff00';
@@ -85,6 +97,8 @@ export default function ShopModal({ npc, items, playerGold, onPurchase, onClose,
               npc={npc} 
               gameData={gameData}
               onClose={() => setShowDialogue(false)}
+              messages={dialogueMessages}
+              setMessages={setDialogueMessages}
             />
           ) : (
             /* Shop View */

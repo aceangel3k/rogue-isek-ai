@@ -1,13 +1,18 @@
 import { useState, useRef, useEffect } from 'react';
 
-export default function DialogueBox({ npc, gameData, onClose }) {
-  const [messages, setMessages] = useState([
+export default function DialogueBox({ npc, gameData, onClose, messages, setMessages }) {
+  // Use external state if provided, otherwise use local state
+  const [localMessages, setLocalMessages] = useState([
     {
       role: 'assistant',
       content: npc?.greeting || "Greetings, traveler. How may I assist you?",
       timestamp: Date.now()
     }
   ]);
+  
+  // Use external state if provided, otherwise use local state
+  const messageState = messages || localMessages;
+  const setMessageState = setMessages || setLocalMessages;
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
@@ -22,7 +27,7 @@ export default function DialogueBox({ npc, gameData, onClose }) {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messageState]);
 
   const sendMessage = async () => {
     if (!inputText.trim() || isLoading) return;
@@ -36,7 +41,7 @@ export default function DialogueBox({ npc, gameData, onClose }) {
       content: userMessage,
       timestamp: Date.now()
     };
-    setMessages(prev => [...prev, newUserMessage]);
+    setMessageState(prev => [...prev, newUserMessage]);
     setIsLoading(true);
 
     try {
@@ -55,7 +60,7 @@ export default function DialogueBox({ npc, gameData, onClose }) {
           player_message: userMessage,
           context: {
             game_setting: gameData?.story?.setting || 'a mysterious dungeon',
-            conversation_history: messages.slice(-6).map(msg => ({
+            conversation_history: messageState.slice(-6).map(msg => ({
               role: msg.role,
               content: msg.content
             }))
@@ -75,7 +80,7 @@ export default function DialogueBox({ npc, gameData, onClose }) {
         content: data.dialogue || "I'm not sure how to respond to that.",
         timestamp: Date.now()
       };
-      setMessages(prev => [...prev, aiMessage]);
+      setMessageState(prev => [...prev, aiMessage]);
     } catch (error) {
       console.error('Error getting NPC response:', error);
       const errorMessage = {
@@ -83,7 +88,7 @@ export default function DialogueBox({ npc, gameData, onClose }) {
         content: "Forgive me, I seem to have lost my train of thought...",
         timestamp: Date.now()
       };
-      setMessages(prev => [...prev, errorMessage]);
+      setMessageState(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
@@ -125,7 +130,7 @@ export default function DialogueBox({ npc, gameData, onClose }) {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {messages.map((msg, index) => (
+        {messageState.map((msg, index) => (
           <div
             key={index}
             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
